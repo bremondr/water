@@ -4,6 +4,7 @@
 import http from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { scrapeAll, finalizeReservoirs } from './dams.mjs';
+import { scrapeWeirs } from './weirs.mjs';
 import { povodi } from './basins.mjs';
 import { createCache } from './cache.mjs';
 
@@ -85,16 +86,23 @@ async function buildStations() {
 const COORDS = JSON.parse(await readFile(new URL('./dam-coords.json', import.meta.url), 'utf8'));
 
 async function buildReservoirs(prev) {
-  const { dams, errors } = await scrapeAll();
+  const [{ dams, errors }, { weirs, errors: weirErrors }] = await Promise.all([scrapeAll(), scrapeWeirs()]);
   if (!dams.length) throw new Error(`all portals failed: ${errors.map(e => `${e.key}: ${e.message}`).join('; ')}`);
   // A portal that is down keeps its last known dams (flagged stale) instead of vanishing from the map.
   const failed = new Set(errors.map(e => e.pov));
   const kept = (prev?.reservoirs ?? []).filter(d => failed.has(d.pov)).map(d => ({ ...d, stale: true }));
-  for (const e of errors) console.error(`[reservoirs] ${e.pov} failed: ${e.message}`);
+  // same for weirs: keep the last known record of a weir whose page failed
+  const failedWeirs = new Set(weirErrors.map(e => e.key));
+  const keptWeirs = (prev?.weirs ?? []).filter(w => failedWeirs.has(w.key)).map(w => ({ ...w, stale: true }));
+  for (const e of [...errors, ...weirErrors]) console.error(`[reservoirs] ${e.pov} failed: ${e.message}`);
   return {
     updated: new Date().toISOString(),
     reservoirs: [...finalizeReservoirs(dams, COORDS), ...kept],
-    errors: errors.map(e => ({ pov: e.pov, message: e.message, haveOlderData: kept.some(d => d.pov === e.pov) })),
+    weirs: [...weirs, ...keptWeirs],
+    errors: [
+      ...errors.map(e => ({ pov: e.pov, message: e.message, haveOlderData: kept.some(d => d.pov === e.pov) })),
+      ...weirErrors.map(e => ({ pov: e.pov, message: e.message, haveOlderData: keptWeirs.some(w => w.key === e.key) })),
+    ],
   };
 }
 
@@ -112,5 +120,5 @@ http.createServer(async (req, res) => {
   } catch (e) { res.writeHead(502); res.end(String(e)); }
 }).listen(PORT, () => {
   console.log(`http://localhost:${PORT}`);
-  stations.start(); reservoirs.start();
+  reservoirs.start(); stations.start();   // small and quick first, so it is not starved by the 1,600-request station build
 });

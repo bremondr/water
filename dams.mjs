@@ -22,12 +22,24 @@ const unent = s => s.replace(/<[^>]*>/g, '').replace(/&#(\d+);/g, (_, c) => Stri
 
 // The portals bounce a cookie-less first request through a "WaitPage" splash, and the redirect chain
 // only lands on the data page when the session cookie survives it, so follow redirects by hand.
-export async function getPage(url) {
+// Network errors ("fetch failed", seen when the server starts and many requests go out at once) are retried
+// with a growing pause; HTTP errors are not.
+async function fetchRetry(u, opts) {
+  for (let i = 0; ; i++) {
+    try { return await fetch(u, { ...opts, signal: AbortSignal.timeout(20_000) }); }
+    catch (e) {
+      if (i >= 2) throw new Error(`${e.message}${e.cause?.code ? ` (${e.cause.code})` : ''} ${u}`);
+      await new Promise(r => setTimeout(r, 1500 * (i + 1)));
+    }
+  }
+}
+
+export async function getPage(url, marker = 'Mereni.aspx') {
   const jar = new Map();
   for (let attempt = 0; attempt < 3; attempt++) {
     let u = url, html = '';
     for (let hop = 0; hop < 6; hop++) {
-      const res = await fetch(u, {
+      const res = await fetchRetry(u, {
         redirect: 'manual', headers: { 'user-agent': UA, cookie: [...jar].map(([k, v]) => `${k}=${v}`).join('; ') },
       });
       for (const c of res.headers.getSetCookie?.() ?? []) { const [kv] = c.split(';'); const i = kv.indexOf('='); jar.set(kv.slice(0, i), kv.slice(i + 1)); }
@@ -35,7 +47,7 @@ export async function getPage(url) {
       if (!res.ok) throw new Error(`${res.status} ${u}`);
       html = await res.text(); break;
     }
-    if (html.includes('Mereni.aspx')) return html;   // got the data table
+    if (html.includes(marker)) return html;   // got the real page, not the splash
   }
   throw new Error(`no data table at ${url}`);
 }

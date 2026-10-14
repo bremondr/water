@@ -12,6 +12,8 @@ Prototype web app. Node 20+ (ESM, no dependencies, no build step). UI language i
 ## Layout
 - `server.mjs`: HTTP server and the ČHMÚ station builder. `/api/stations`, `/api/reservoirs`, serves `index.html`.
 - `dams.mjs`: scraper + pure functions (`parseTable`, `joinTables`, `finalizeReservoirs`) for the five povodí portals.
+- `weirs.mjs`: Elbe weirs/locks (Střekov, Opatovice nad Labem) scraped from Povodí Labe station pages; they ride along in
+  `/api/reservoirs` as `weirs` and show in the "Nádrže a jezy" mode. Only stations whose level is in m n. m. are weirs (2 of 124).
 - `basins.mjs`: station → povodí mapping from the hydrological order number (approximate).
 - `cache.mjs`: stale-while-revalidate cache persisted to `.cache/` (gitignored). A restart serves the last good data
   instantly. A failed refresh keeps the previous value.

@@ -1,0 +1,606 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+<head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><meta http-equiv="Pragma" content="no-cache" /><meta http-equiv="Expires" content="-1" /><meta http-equiv="cache-control" content="private" /><title>
+	Povodí Labe - Stavy a průtoky
+</title><link href="../../Styles/Style.css" rel="stylesheet" type="text/css" />
+    <!-- Global site tag (gtag.js) - Google Analytics-->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-15884733-3"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
+        gtag('config', 'UA-15884733-3');
+    </script>
+<link href="../../App_Themes/pc/PC.css" type="text/css" rel="stylesheet" /><script type="text/javascript" src="/portal/sap/Scripts/GoogleAnalytics/PLA.js"></script></head>
+<body onload="ZvolTemaAplikaceNaZakladeRozliseniKlienta();">
+    <form method="post" action="./Mereni.aspx?id=74&amp;oid=3" id="ctl01">
+<div class="aspNetHidden">
+<input type="hidden" name="__EVENTTARGET" id="__EVENTTARGET" value="" />
+<input type="hidden" name="__EVENTARGUMENT" id="__EVENTARGUMENT" value="" />
+<input type="hidden" name="__LASTFOCUS" id="__LASTFOCUS" value="" />
+<input type="hidden" name="__VIEWSTATE" id="__VIEWSTATE" value="" />
+</div>
+
+<script type="text/javascript">
+//<![CDATA[
+var theForm = document.forms['ctl01'];
+if (!theForm) {
+    theForm = document.ctl01;
+}
+function __doPostBack(eventTarget, eventArgument) {
+    if (!theForm.onsubmit || (theForm.onsubmit() != false)) {
+        theForm.__EVENTTARGET.value = eventTarget;
+        theForm.__EVENTARGUMENT.value = eventArgument;
+        theForm.submit();
+    }
+}
+//]]>
+</script>
+
+
+<div class="aspNetHidden">
+
+	<input type="hidden" name="__VIEWSTATEGENERATOR" id="__VIEWSTATEGENERATOR" value="" />
+	<input type="hidden" name="__VIEWSTATEENCRYPTED" id="__VIEWSTATEENCRYPTED" value="" />
+	<input type="hidden" name="__EVENTVALIDATION" id="__EVENTVALIDATION" value="" />
+</div>
+        <script src='/portal/sap/Scripts/MasterUtility.js' type="text/javascript"></script>
+        
+        <div id="horniMenuDiv" style="padding: 0px 5px 0px 5px; height: 20px; filter: progid:DXImageTransform.Microsoft.Gradient(endColorstr='#0000ffff', startColorstr='#FF99CCCC', gradientType='0')">
+            <span style="float: left; text-align: left">
+                <a id="StavyAPrutokyHL" class="zahlavi1" href="CelkovaMapa.aspx" style="font-weight:bold;">Stavy a průtoky</a>&nbsp;
+                <span class="oddelovac">|</span>&nbsp;
+                <a id="NadrzeHL" class="zahlavi1" href="https://www.pla.cz/portal/nadrze/" target="_self" style="font-weight:bold;">Nádrže</a>&nbsp;
+                <span class="oddelovac">|</span>&nbsp;
+                <a id="SrazkyHL" class="zahlavi1" href="https://www.pla.cz/portal/srazky/" target="_self" style="font-weight:bold;">Srážky</a>&nbsp;
+                <span class="oddelovac">|</span>&nbsp;
+                <a id="JakostHL" class="zahlavi1" href="https://www.pla.cz/portal/jvn" target="_self" style="font-weight:bold;">Jakost</a>
+            </span>
+            <span style="float: right; text-align: right">
+                <span id="PosledniAktualizaceLbl" class="zahlavi1">Poslední aktualizace stránek</span>
+                <span id="PosledniAktualizaceDatumLbl" class="zahlavi1">14.10.2026 17:14</span>
+            </span>
+        </div>
+        <div id="obsahVseDiv" style="background-repeat: repeat-x; width: 100%; position: relative;">
+            <div id="obsahZuzenyCentrovanyDiv" class="obsahZuzenyCentrovany">
+                <div id="hlavickaDiv" style="background-repeat:no-repeat;width:100%;height:110px;border-bottom:1px solid #AAAAAA;background-image:url(/portal/sap/Images/zahlavi/zahlavi_cz.jpg);">
+                    <div id="linkaDiv" style="width:100%;z-index:1500;height:6px;background-image:url(/portal/sap/Images/zahlavi/bgzahlavi.jpg);"></div>
+                    <a id="LogoPovodiHL" href="https://www.pla.cz" target="_blank" style="display:inline-block;height:44px;position: absolute; top: 34px; right: 13px; border: 1px solid #AAAAAA; padding: 2px; background-color: white"><img src="../../Images/logo_povodi_4.gif" alt="" /></a>
+                    <select name="ctl00$MonitorovaciStaniceDDL" onchange="javascript:setTimeout(&#39;__doPostBack(\&#39;ctl00$MonitorovaciStaniceDDL\&#39;,\&#39;\&#39;)&#39;, 0)" id="MonitorovaciStaniceDDL" class="text1" style="height:18px;width:210px;position: absolute; top: 69px; left: 85px;">
+	<option value="-1">Monitorovac&#237; stanice (tok - stanice)</option>
+	<option value="188|1">Albrechtick&#253; potok - Ml&#253;nice</option>
+	<option value="2|2">Běl&#225; - Častolovice</option>
+	<option value="3|2">Běl&#225; - Jedlov&#225; v Orlick&#253;ch hor&#225;ch</option>
+	<option value="234|2">Běl&#225; - Skuhrov</option>
+	<option value="7|1">Bystřice - Rohoznice</option>
+	<option value="11|2">Chrudimka - Hamry</option>
+	<option value="173|2">Chrudimka - L&#225;ny</option>
+	<option value="12|2">Chrudimka - Mezisvět&#237;</option>
+	<option value="13|2">Chrudimka - Nemošice</option>
+	<option value="159|2">Chrudimka - Padrty</option>
+	<option value="174|2">Chrudimka - Přemilov</option>
+	<option value="14|2">Chrudimka - Sv&#237;dnice</option>
+	<option value="281|1">Cidlina - Chlumec nad Cidlinou</option>
+	<option value="177|1">Cidlina - Jič&#237;n</option>
+	<option value="9|1">Cidlina - Nov&#253; Bydžov</option>
+	<option value="10|1">Cidlina - S&#225;ny</option>
+	<option value="181|1">Čern&#225; Desn&#225; - Desn&#225; - Jezdeck&#225;</option>
+	<option value="162|1">Čern&#225; Desn&#225; - Souš</option>
+	<option value="186|1">Čern&#225; Nisa - Rudolfov</option>
+	<option value="185|1">Čern&#225; Nisa - Uhl&#237;řsk&#225;</option>
+	<option value="201|1">Čist&#225; - Hostinn&#233;</option>
+	<option value="15|2">Dědina - Ch&#225;bory</option>
+	<option value="16|2">Dědina - Mitrov</option>
+	<option value="17|2">Dědina - Ž&#225;kovec</option>
+	<option value="18|2">Divok&#225; Orlice - Kl&#225;šterec nad Orlic&#237;</option>
+	<option value="19|2">Divok&#225; Orlice - Kostelec nad Orlic&#237;</option>
+	<option value="20|2">Divok&#225; Orlice - Litice</option>
+	<option value="21|2">Divok&#225; Orlice - Nekoř</option>
+	<option value="267|2">Divok&#225; Orlice - Orlick&#233; Z&#225;hoř&#237;</option>
+	<option value="268|2">Doubrava - B&#237;lek ČHM&#218;</option>
+	<option value="23|2">Doubrava - Pař&#237;žov</option>
+	<option value="175|2">Doubrava - Spačice</option>
+	<option value="24|2">Doubrava - Žleby</option>
+	<option value="25|1">Dřev&#237;č - Velk&#253; Dřev&#237;č</option>
+	<option value="187|1">Fojtka - Fojtka</option>
+	<option value="184|1">Harcovsk&#253; potok - Harcov odtok</option>
+	<option value="204|1">Harcovsk&#253; potok - Harcov př&#237;tok</option>
+	<option value="160|1">Javorka - L&#225;zně Bělohrad</option>
+	<option value="167|1">Jeřice - Mn&#237;šek</option>
+	<option value="1026|1">Jizera - Bakov</option>
+	<option value="28|1">Jizera - Doln&#237; Sytov&#225;</option>
+	<option value="29|1">Jizera - Jablonec nad Jizerou</option>
+	<option value="31|1">Jizera - Předměřice</option>
+	<option value="182|1">Jizera - Turnov</option>
+	<option value="32|1">Jizera - Železn&#253; Brod</option>
+	<option value="161|1">Jizerka - Doln&#237; Štěpanice</option>
+	<option value="171|1">Kalensk&#253; potok - Doln&#237; Olešnice</option>
+	<option value="33|1">Kamenice - Josefův Důl</option>
+	<option value="34|1">Kamenice - Kristi&#225;nov</option>
+	<option value="35|1">Kamenice - Plavy</option>
+	<option value="282|1">Klenice - Březno</option>
+	<option value="36|2">Kněžn&#225; - Rychnov nad Kněžnou</option>
+	<option value="270|2">Krounka - Otradov</option>
+	<option value="37|3">Labe - Brand&#253;s nad Labem</option>
+	<option value="1042|3">Labe - Děč&#237;n</option>
+	<option value="47|1">Labe - Hostinn&#233;</option>
+	<option value="287|1">Labe - Hradec Kr&#225;lov&#233; - soutok</option>
+	<option value="50|1">Labe - Jaroměř</option>
+	<option value="233|3">Labe - Kostelec nad Labem</option>
+	<option value="55|1">Labe - Labsk&#225;</option>
+	<option value="56|1">Labe - Les Kr&#225;lovstv&#237;</option>
+	<option value="223|3">Labe - Litoměřice</option>
+	<option value="60|3">Labe - Měln&#237;k</option>
+	<option value="61|3">Labe - Němčice</option>
+	<option value="63|3">Labe - Nymburk</option>
+	<option value="65|3">Labe - Opatovice nad Labem</option>
+	<option value="71|3">Labe - Přelouč</option>
+	<option value="337|1">Labe - Stanovice</option>
+	<option selected="selected" value="74|3">Labe - Střekov</option>
+	<option value="75|1">Labe - Špindlerův Ml&#253;n</option>
+	<option value="1079|3">Labe - &#218;st&#237; nad Labem</option>
+	<option value="227|1">Labe - Vestřev</option>
+	<option value="224|2">Lež&#225;k - Zaječice</option>
+	<option value="85|2">Loučn&#225; - Cerekvice nad Loučnou</option>
+	<option value="86|2">Loučn&#225; - Dašice</option>
+	<option value="163|2">Loučn&#225; - Litomyšl</option>
+	<option value="83|1">Lužick&#225; Nisa - Hr&#225;dek nad Nisou</option>
+	<option value="84|1">Lužick&#225; Nisa - Liberec</option>
+	<option value="168|1">Lužick&#225; Nisa - Proseč nad Nisou</option>
+	<option value="228|1">Mal&#233; Labe - Horn&#237; L&#225;nov</option>
+	<option value="169|1">Mal&#233; Labe - Prosečn&#233;</option>
+	<option value="87|1">Metuje - Hronov</option>
+	<option value="88|1">Metuje - Jaroměř</option>
+	<option value="89|1">Metuje - Krč&#237;n</option>
+	<option value="90|1">Metuje - Maršov nad Metuj&#237;</option>
+	<option value="91|1">Mohelka - Chocnějovice</option>
+	<option value="92|1">Mrlina - Vestec</option>
+	<option value="183|1">Mšensk&#253; potok - Mšeno</option>
+	<option value="179|1">Mumlava - Janov-Harrachov</option>
+	<option value="273|2">Novohradka - Luže</option>
+	<option value="164|2">Novohradka - &#218;hřetice</option>
+	<option value="93|3">Ohře - Louny</option>
+	<option value="269|1">Olešenka - Peklo</option>
+	<option value="284|1">Oleška - Fr&#253;dlant - Dětřichov</option>
+	<option value="180|1">Oleška - Semily - Slan&#225;</option>
+	<option value="97|1">Orlice - Hradec Kr&#225;lov&#233; - Orlice</option>
+	<option value="98|2">Orlice - T&#253;niště nad Orlic&#237;</option>
+	<option value="170|1">Piln&#237;kovsk&#253; potok - Chotěvice</option>
+	<option value="116|2">Rokytenka - Žamberk</option>
+	<option value="117|1">Rozkošsk&#253; potok - Rozkoš odtok</option>
+	<option value="189|1">Řasnice - Fr&#253;dlant - Řasnice</option>
+	<option value="119|1">Směd&#225; - B&#237;l&#253; Potok</option>
+	<option value="120|1">Směd&#225; - Fr&#253;dlant</option>
+	<option value="121|1">Směd&#225; - Předl&#225;nce</option>
+	<option value="141|1">Stěnava - Meziměst&#237;</option>
+	<option value="142|1">Stěnava - Otovice</option>
+	<option value="280|2">Šembera - Česk&#253; Brod</option>
+	<option value="221|1">Št&#237;tarsk&#253; potok - Sv&#237;dnice</option>
+	<option value="143|2">Tich&#225; Orlice - Čermn&#225; nad Orlic&#237;</option>
+	<option value="222|2">Tich&#225; Orlice - Doln&#237; Libchavy</option>
+	<option value="144|2">Tich&#225; Orlice - Lichkov</option>
+	<option value="145|2">Tich&#225; Orlice - Sobkovice</option>
+	<option value="147|2">Třebovka - Třebovice</option>
+	<option value="146|2">Třebovka - &#218;st&#237; nad Orlic&#237;</option>
+	<option value="149|1">&#218;pa - Horn&#237; Maršov</option>
+	<option value="172|1">&#218;pa - Horn&#237; Star&#233; Město</option>
+	<option value="150|1">&#218;pa - Slatina nad &#218;pou</option>
+	<option value="151|1">&#218;pa - Zl&#237;č</option>
+	<option value="283|1">Vlkava - Všejany</option>
+	<option value="154|3">Vltava - Vraňany</option>
+	<option value="176|2">Vrchlice - Malešov</option>
+	<option value="166|2">Vrchlice - Vrchlice</option>
+	<option value="157|2">V&#253;rovka - Plaňany</option>
+	<option value="158|2">Zdobnice - Slatina nad Zdobnic&#237;</option>
+
+</select>
+                    <div id="pocitadloAJazykyDiv" style="position: absolute; top: 10px; right: 5px;">
+                        <span style="margin: 0px 10px 0px 250px;">
+                            &nbsp;
+                        </span>
+                        <span>
+                            <input type="image" name="ctl00$CzIB" id="CzIB" title="Česká verze" src="../../Images/vlajky/vlajky_r1_c1_f2.gif" />&nbsp;
+                            <input type="image" name="ctl00$SkIB" id="SkIB" title="Slovenská verzia" onmouseover="ZvyrazniTlacitkoSVlajkou(this)" onmouseout="ZasedniTlacitkoSVlajkou(this)" src="../../Images/vlajky/vlajky_r1_c3.gif" />&nbsp;
+                            <input type="image" name="ctl00$EnIB" id="EnIB" title="English version" onmouseover="ZvyrazniTlacitkoSVlajkou(this)" onmouseout="ZasedniTlacitkoSVlajkou(this)" src="../../Images/vlajky/vlajky_r1_c7.gif" />&nbsp;
+                            <input type="image" name="ctl00$DeIB" id="DeIB" title="Deutsche Version" onmouseover="ZvyrazniTlacitkoSVlajkou(this)" onmouseout="ZasedniTlacitkoSVlajkou(this)" src="../../Images/vlajky/vlajky_r1_c9.gif" />&nbsp;
+                            <input type="image" name="ctl00$HuIB" id="HuIB" title="Magyar verzió" onmouseover="ZvyrazniTlacitkoSVlajkou(this)" onmouseout="ZasedniTlacitkoSVlajkou(this)" src="../../Images/vlajky/vlajky_r1_c5.gif" />&nbsp;
+                            <input type="image" name="ctl00$PlIB" id="PlIB" title="Wersja polska" onmouseover="ZvyrazniTlacitkoSVlajkou(this)" onmouseout="ZasedniTlacitkoSVlajkou(this)" src="../../Images/vlajky/vlajky_r1_c11.gif" />&nbsp;
+                        </span>
+                    </div>
+                    <div id="spodniMenuDiv" style="position: absolute; top: 88px; width: 100%;">
+                        <span style="float: left; padding-left: 5px;">
+                            <a id="CelkovaMapaPovodiHL" class="zahlavi1" href="CelkovaMapa.aspx" style="font-weight:bold;">Celková mapa povodí</a>&nbsp;
+                            <span id="Label1" class="oddelovac">|</span>&nbsp;
+                            <a id="PrehledMereniHL" class="zahlavi1" href="Prehled.aspx" style="font-weight:bold;">Přehled měření</a>&nbsp;
+                            <span id="Label2" class="oddelovac">|</span>&nbsp;
+                            <a id="HydrologickaSituaceHL" class="zahlavi1" href="https://www.pla.cz/planet/projects/webservices/GetFileFromDB/ukaz_soubor.ashx?id=dsaf64sdf79w" target="_blank" style="font-weight:bold;">Hydrologická situace</a>&nbsp;
+                            <span id="Label3" class="oddelovac">|</span>&nbsp;
+                            <a id="VystrahaHL" class="zahlavi1" href="https://www.chmi.cz/" target="_blank" style="font-weight:bold;">Výstraha</a>
+                        </span>
+                        
+                        <span style="float: right; padding-right: 5px;">
+                            <span id="Label4" class="text1bold">Zobrazení:</span>
+                            <input type="image" name="ctl00$PCIB" id="PCIB" class="text1" onmouseover="ZvyrazniTlacitkoProVolbuVzhledu(this)" onmouseout="ZasedniTlacitkoProVolbuVzhledu(this)" src="../../Images/temata/pc_zasedle.png" style="font-weight:bold;" />
+                            <input type="image" name="ctl00$SmartPhoneIB" id="SmartPhoneIB" class="zahlavi1" onmouseover="ZvyrazniTlacitkoProVolbuVzhledu(this)" onmouseout="ZasedniTlacitkoProVolbuVzhledu(this)" src="../../Images/temata/smartphone_zasedle.png" style="font-weight:bold;" />
+                            <input type="image" name="ctl00$TextIB" id="TextIB" class="zahlavi1" onmouseover="ZvyrazniTlacitkoProVolbuVzhledu(this)" onmouseout="ZasedniTlacitkoProVolbuVzhledu(this)" src="../../Images/temata/text_zasedle.png" style="font-weight:bold;" />
+                        </span>
+                    </div>
+                </div>
+                <div style="padding: 0px 5px 0px 5px;">
+                    <div style="width: 100%; height: 15px; padding-top: 5px;">
+                        <span id="SkrytyNazevLbl" class="texthide" style="width: 25%; float: left">Stavy a průtoky</span>
+                        <span id="UpozorneniLbl" class="textUpozor" style="float: left; width: 50%; text-align: center;">UPOZORNĚNÍ: Veškerá uváděná data jsou bez záruky.</span>
+                        <span id="SkryteDatumLbl" class="texthide" style="width: 25%; float: left; text-align: right;">14.10.2026 17:16:40</span>
+                    </div>
+                    <div id="obsahDiv" style="padding: 5px;">
+                        
+    
+    
+
+    
+    <table cellspacing="0" id="ObsahCPH_UdajeStaniceFW" style="border-collapse:collapse;margin-bottom:10px;">
+	<tr>
+		<td colspan="2">
+            <table id="ObsahCPH_UdajeStaniceFW_UdajeStaniceTbl" cellspacing="0" cellpadding="3" rules="all" style="border-color:#AAAAAA;border-width:1px;border-style:solid;width:525px;border-collapse:collapse;">
+			<tr>
+				<td class="bunkaFormView" valign="top" colspan="7" style="background-color:#99CCFF;">
+			            <span style="width:225px; float:left">
+                            &nbsp;<span class="text1">Stanice</span>&nbsp;
+                            <span id="ObsahCPH_UdajeStaniceFW_NazevStaniceLbl" class="text1bold">Střekov</span>
+                        </span>
+                        <span style="width:225px; float:left">
+                            &nbsp;<span class="text1">Tok</span>&nbsp;
+                            <span id="ObsahCPH_UdajeStaniceFW_NazevTokuLbl" class="text1bold">Labe</span>
+                        </span>
+                        <span style="float:right; text-align:right">
+                            <input type="image" name="ctl00$ObsahCPH$UdajeStaniceFW$GenerujPDFIB" id="ObsahCPH_UdajeStaniceFW_GenerujPDFIB" title="Generovat PDF" src="../../Images/generovat_pdf.png" alt="PDF" style="margin-left:4px;" />
+                        </span>
+                    </td>
+			</tr><tr>
+				<td class="bunkaFormView" valign="top" colspan="7" style="background-color:Silver;"><span class="text1">Povodně</span></td>
+			</tr><tr>
+				<td class="bunkaFormView" valign="top" colspan="5" style="width:375px;"><img src="../../Images/legenda/leg_stupen1.gif" alt="1. stupeň povodňové aktivity" style="border-width:1px;border-style:solid;" />
+                        &nbsp;<span class="text1">1. stupeň povodňové aktivity</span>&nbsp;
+                    </td><td align="right" colspan="2" style="border-color:#AAAAAA;border-width:1px;border-style:Solid;width:150px;"><span class="text1">&mdash;</span><span class="text1" style="margin-left:3px;">[m n.m.]</span></td>
+			</tr><tr>
+				<td class="bunkaFormView" valign="top" colspan="5" style="width:375px;"><img src="../../Images/legenda/leg_stupen2.gif" alt="2. stupeň povodňové aktivity" style="border-width:1px;border-style:solid;" />
+                        &nbsp;<span class="text1">2. stupeň povodňové aktivity</span>&nbsp;
+                    </td><td class="bunkaFormView" align="right" colspan="2" style="width:150px;"><span class="text1">&mdash;</span><span class="text1" style="margin-left:3px;">[m n.m.]</span></td>
+			</tr><tr>
+				<td class="bunkaFormView" valign="top" colspan="5" style="width:375px;"><img src="../../Images/legenda/leg_stupen3.gif" alt="3. stupeň povodňové aktivity" style="border-width:1px;border-style:solid;" />
+                        &nbsp;<span class="text1">3. stupeň povodňové aktivity</span>&nbsp;
+                    </td><td class="bunkaFormView" align="right" colspan="2" style="width:150px;"><span class="text1">&mdash;</span><span class="text1" style="margin-left:3px;">[m n.m.]</span></td>
+			</tr><tr>
+				<td class="bunkaFormView" valign="top" colspan="5" style="width:375px;"><img src="../../Images/legenda/leg_stupen3.gif" alt="extrémní povodeň" style="border-width:1px;border-style:solid;" />
+                        &nbsp;<span class="text1">3. stupeň povodňové aktivity</span>&nbsp;
+                        <span class="text1">(</span><img src="../../Images/legenda/vykricnik.gif" alt="!" style="margin-right:3px;" /><span class="text1">extrémní povodeň</span><span class="text1">)</span><span class="text1"> (Q</span><span class="index1">50</span><span class="text1">)</span></td><td class="bunkaFormView" align="right" colspan="2" style="width:150px;"><span class="text1">&mdash;</span><span class="text1" style="margin-left:3px;">[m n.m.]</span></td>
+			</tr><tr>
+				<td class="bunkaFormView" valign="top" colspan="7"><span class="text1bold" style="margin-right:10px;">Poznámka</span><span class="text1"></span></td>
+			</tr><tr>
+				<td class="bunkaFormView" valign="top" colspan="7" style="background-color:Silver;"><span class="text1bold">nízké průtoky</span></td>
+			</tr><tr>
+				<td class="bunkaFormView" valign="middle" colspan="5" style="width:375px;"><img src="../../Images/legenda/leg_stupens.gif" alt="nízké průtoky" style="border-width:1px;border-style:solid;" /><span class="text1"> Q</span><span class="index1">355</span><span class="text1">:</span></td><td class="bunkaFormView" align="right" colspan="2" style="width:150px;"><span class="text1">87,80</span><span class="text1"> [m</span><span class="index1"><sup>3</sup></span><span class="text1">.s</span><span class="index1"><sup>-1</sup></span><span class="text1">]</span></td>
+			</tr><tr>
+				<td class="bunkaFormView" valign="top" colspan="7" style="background-color:Silver;"><span class="text1bold">N-leté průtoky</span><span class="text1bold"> [m</span><span class="index1bold"><sup>3</sup></span><span class="text1bold">.s</span><span class="index1bold"><sup>-1</sup></span><span class="text1bold">]</span></td>
+			</tr><tr>
+				<td class="bunkaFormView" align="center" valign="middle" style="width:75px;"><span class="text1">Q</span><span class="index1">1</span></td><td class="bunkaFormView" align="center" valign="middle" style="width:75px;"><span class="text1">Q</span><span class="index1">2</span></td><td class="bunkaFormView" align="center" valign="middle" style="width:75px;"><span class="text1">Q</span><span class="index1">5</span></td><td class="bunkaFormView" align="center" valign="middle" style="width:75px;"><span class="text1">Q</span><span class="index1">10</span></td><td class="bunkaFormView" align="center" valign="middle" style="width:75px;"><span class="text1">Q</span><span class="index1">20</span></td><td class="bunkaFormView" align="center" valign="middle" style="width:75px;"><span class="text1">Q</span><span class="index1">50</span></td><td class="bunkaFormView" align="center" valign="middle" style="width:75px;"><span class="text1">Q</span><span class="index1">100</span></td>
+			</tr><tr style="height:25px;">
+				<td class="bunkaFormView" align="right" valign="middle" style="width:75px;"><span class="text1">1010</span></td><td class="bunkaFormView" align="right" valign="middle" style="width:75px;"><span class="text1">1340</span></td><td class="bunkaFormView" align="right" valign="middle" style="width:75px;"><span class="text1">1870</span></td><td class="bunkaFormView" align="right" valign="middle" style="width:75px;"><span class="text1">2330</span></td><td class="bunkaFormView" align="right" valign="middle" style="width:75px;"><span class="text1">2860</span></td><td class="bunkaFormView" align="right" valign="middle" style="width:75px;"><span class="text1">3630</span></td><td class="bunkaFormView" align="right" valign="middle" style="width:75px;"><span class="text1">4290</span></td>
+			</tr><tr>
+				<td class="bunkaFormView" valign="top" colspan="7" style="background-color:Silver;">
+                        &nbsp;<span class="text1bold">Historické povodně (3 nejvyšší zaznamenané po dobu pozorování)</span></td>
+			</tr><tr>
+				<td class="bunkaFormView" align="center" valign="middle" style="width:75px;"><span class="text1">&mdash;</span></td><td class="bunkaFormView" align="center" valign="middle" colspan="2" style="width:150px;"><span class="text1">&mdash;</span><span class="text1"> [m</span><span class="index1"><sup>3</sup></span><span class="text1">.s</span><span class="index1"><sup>-1</sup></span><span class="text1">]</span></td><td class="bunkaFormView" align="left" valign="middle" colspan="4" style="width:300px;"><span class="text1"> N ~</span><span class="text1"></span></td>
+			</tr><tr>
+				<td class="bunkaFormView" align="center" valign="middle" style="width:75px;"><span class="text1">&mdash;</span></td><td class="bunkaFormView" align="center" valign="middle" colspan="2" style="width:150px;"><span class="text1">&mdash;</span><span class="text1"> [m</span><span class="index1"><sup>3</sup></span><span class="text1">.s</span><span class="index1"><sup>-1</sup></span><span class="text1">]</span></td><td class="bunkaFormView" align="left" valign="middle" colspan="4" style="width:300px;"><span class="text1"> N ~</span><span class="text1"></span></td>
+			</tr><tr>
+				<td class="bunkaFormView" align="center" valign="middle" style="width:75px;"><span class="text1">&mdash;</span></td><td class="bunkaFormView" align="center" valign="middle" colspan="2" style="width:150px;"><span class="text1">&mdash;</span><span class="text1"> [m</span><span class="index1"><sup>3</sup></span><span class="text1">.s</span><span class="index1"><sup>-1</sup></span><span class="text1">]</span></td><td class="bunkaFormView" align="left" valign="middle" colspan="4" style="width:300px;"><span class="text1"> N ~</span><span class="text1"></span></td>
+			</tr>
+		</table>
+        </td>
+	</tr>
+</table>
+
+    
+        <table id="ObsahCPH_DataAObrazkyTbl" cellspacing="0" cellpadding="3" style="border-width:0px;width:820px;border-collapse:collapse;">
+	<tr>
+		<td valign="top" style="height:500px;width:420px;"><img id="ObsahCPH_GrafImg" src="../../Images/grafy/GrafQH_3_74.png" alt="Graf" /></td><td valign="top" rowspan="3" style="width:400px;padding-top:30px"><div>
+			<table cellspacing="0" cellpadding="3" rules="all" id="ObsahCPH_DataMereniGV" style="border-color:#AAAAAA;border-width:1px;border-style:solid;border-collapse:collapse;margin-top:10px; margin-bottom:5px">
+				<tr class="text1" style="background-color:Silver;font-weight:normal;height:20px;">
+					<th scope="col" style="width:90px;border:1px solid #AAAAAA;">&nbsp;</th><th scope="col" style="width:50px;border:1px solid #AAAAAA;">
+                                    <span class="text1" style="font-weight:bold;">H</span>
+                                    <span class="text1">[m n.m.]</span>
+                                </th><th scope="col" style="width:80px;border:1px solid #AAAAAA;">
+                                    <div style="position:relative; top:-2px;">
+                                    <span class="text1bold">Q</span>
+                                    <span class="text1">[m</span><span class="text1"><sup>3</sup></span><span class="text1">.s</span><span class="index1"><sup>-1</sup></span><span class="text1">]</span>
+                                    </div>
+                                </th><th scope="col" style="width:45px;border:1px solid #AAAAAA;">
+                                    <span class="text1bold">Q</span><span class="index1bold">N</span>
+                                </th>
+				</tr><tr style="background-color:#FFFFFF;">
+					<td class="bunkaGridu" align="left" style="width:90px;">
+                                    <span>14.10.2026 17:00</span>
+                                </td><td class="bunkaGriduBold" align="right" style="width:50px;">141,42</td><td class="bunkaGriduBold" align="right" style="width:80px;background-color:#996600;">
+                                    <span>67,80</span>
+                                </td><td class="bunkaGriduBold" align="left" style="width:45px;">
+                                    <span></span>
+                                </td>
+				</tr><tr style="background-color:#FFFFFF;">
+					<td class="bunkaGridu" align="left" style="width:90px;">
+                                    <span>14.10.2026 16:00</span>
+                                </td><td class="bunkaGriduBold" align="right" style="width:50px;">141,36</td><td class="bunkaGriduBold" align="right" style="width:80px;background-color:#996600;">
+                                    <span>67,80</span>
+                                </td><td class="bunkaGriduBold" align="left" style="width:45px;">
+                                    <span></span>
+                                </td>
+				</tr><tr style="background-color:#FFFFFF;">
+					<td class="bunkaGridu" align="left" style="width:90px;">
+                                    <span>14.10.2026 15:00</span>
+                                </td><td class="bunkaGriduBold" align="right" style="width:50px;">141,34</td><td class="bunkaGriduBold" align="right" style="width:80px;background-color:#996600;">
+                                    <span>67,80</span>
+                                </td><td class="bunkaGriduBold" align="left" style="width:45px;">
+                                    <span></span>
+                                </td>
+				</tr><tr style="background-color:#FFFFFF;">
+					<td class="bunkaGridu" align="left" style="width:90px;">
+                                    <span>14.10.2026 14:00</span>
+                                </td><td class="bunkaGriduBold" align="right" style="width:50px;">141,33</td><td class="bunkaGriduBold" align="right" style="width:80px;background-color:#996600;">
+                                    <span>68,90</span>
+                                </td><td class="bunkaGriduBold" align="left" style="width:45px;">
+                                    <span></span>
+                                </td>
+				</tr><tr style="background-color:#FFFFFF;">
+					<td class="bunkaGridu" align="left" style="width:90px;">
+                                    <span>14.10.2026 13:00</span>
+                                </td><td class="bunkaGriduBold" align="right" style="width:50px;">141,31</td><td class="bunkaGriduBold" align="right" style="width:80px;background-color:#996600;">
+                                    <span>68,90</span>
+                                </td><td class="bunkaGriduBold" align="left" style="width:45px;">
+                                    <span></span>
+                                </td>
+				</tr><tr style="background-color:#FFFFFF;">
+					<td class="bunkaGridu" align="left" style="width:90px;">
+                                    <span>14.10.2026 12:00</span>
+                                </td><td class="bunkaGriduBold" align="right" style="width:50px;">141,31</td><td class="bunkaGriduBold" align="right" style="width:80px;background-color:#996600;">
+                                    <span>70,00</span>
+                                </td><td class="bunkaGriduBold" align="left" style="width:45px;">
+                                    <span></span>
+                                </td>
+				</tr><tr style="background-color:#FFFFFF;">
+					<td class="bunkaGridu" align="left" style="width:90px;">
+                                    <span>14.10.2026 11:00</span>
+                                </td><td class="bunkaGriduBold" align="right" style="width:50px;">141,28</td><td class="bunkaGriduBold" align="right" style="width:80px;">
+                                    <span></span>
+                                </td><td class="bunkaGriduBold" align="left" style="width:45px;">
+                                    <span></span>
+                                </td>
+				</tr><tr style="background-color:#FFFFFF;">
+					<td class="bunkaGridu" align="left" style="width:90px;">
+                                    <span>14.10.2026 10:00</span>
+                                </td><td class="bunkaGriduBold" align="right" style="width:50px;">141,30</td><td class="bunkaGriduBold" align="right" style="width:80px;background-color:#996600;">
+                                    <span>68,90</span>
+                                </td><td class="bunkaGriduBold" align="left" style="width:45px;">
+                                    <span></span>
+                                </td>
+				</tr><tr style="background-color:#FFFFFF;">
+					<td class="bunkaGridu" align="left" style="width:90px;">
+                                    <span>14.10.2026 09:00</span>
+                                </td><td class="bunkaGriduBold" align="right" style="width:50px;">141,31</td><td class="bunkaGriduBold" align="right" style="width:80px;background-color:#996600;">
+                                    <span>66,70</span>
+                                </td><td class="bunkaGriduBold" align="left" style="width:45px;">
+                                    <span></span>
+                                </td>
+				</tr><tr style="background-color:#FFFFFF;">
+					<td class="bunkaGridu" align="left" style="width:90px;">
+                                    <span>14.10.2026 08:00</span>
+                                </td><td class="bunkaGriduBold" align="right" style="width:50px;">141,24</td><td class="bunkaGriduBold" align="right" style="width:80px;background-color:#996600;">
+                                    <span>66,70</span>
+                                </td><td class="bunkaGriduBold" align="left" style="width:45px;">
+                                    <span></span>
+                                </td>
+				</tr><tr style="background-color:#FFFFFF;">
+					<td class="bunkaGridu" align="left" style="width:90px;">
+                                    <span>14.10.2026 07:00</span>
+                                </td><td class="bunkaGriduBold" align="right" style="width:50px;">141,32</td><td class="bunkaGriduBold" align="right" style="width:80px;background-color:#996600;">
+                                    <span>67,80</span>
+                                </td><td class="bunkaGriduBold" align="left" style="width:45px;">
+                                    <span></span>
+                                </td>
+				</tr><tr style="background-color:#FFFFFF;">
+					<td class="bunkaGridu" align="left" style="width:90px;">
+                                    <span>14.10.2026 06:00</span>
+                                </td><td class="bunkaGriduBold" align="right" style="width:50px;">141,21</td><td class="bunkaGriduBold" align="right" style="width:80px;">
+                                    <span></span>
+                                </td><td class="bunkaGriduBold" align="left" style="width:45px;">
+                                    <span></span>
+                                </td>
+				</tr><tr style="background-color:#FFFFFF;">
+					<td class="bunkaGridu" align="left" style="width:90px;">
+                                    <span>14.10.2026 05:00</span>
+                                </td><td class="bunkaGriduBold" align="right" style="width:50px;">141,34</td><td class="bunkaGriduBold" align="right" style="width:80px;background-color:#996600;">
+                                    <span>71,10</span>
+                                </td><td class="bunkaGriduBold" align="left" style="width:45px;">
+                                    <span></span>
+                                </td>
+				</tr><tr style="background-color:#FFFFFF;">
+					<td class="bunkaGridu" align="left" style="width:90px;">
+                                    <span>14.10.2026 04:00</span>
+                                </td><td class="bunkaGriduBold" align="right" style="width:50px;">141,21</td><td class="bunkaGriduBold" align="right" style="width:80px;">
+                                    <span></span>
+                                </td><td class="bunkaGriduBold" align="left" style="width:45px;">
+                                    <span></span>
+                                </td>
+				</tr><tr style="background-color:#FFFFFF;">
+					<td class="bunkaGridu" align="left" style="width:90px;">
+                                    <span>14.10.2026 03:00</span>
+                                </td><td class="bunkaGriduBold" align="right" style="width:50px;">141,31</td><td class="bunkaGriduBold" align="right" style="width:80px;background-color:#996600;">
+                                    <span>79,08</span>
+                                </td><td class="bunkaGriduBold" align="left" style="width:45px;">
+                                    <span></span>
+                                </td>
+				</tr><tr style="background-color:#FFFFFF;">
+					<td class="bunkaGridu" align="left" style="width:90px;">
+                                    <span>14.10.2026 02:00</span>
+                                </td><td class="bunkaGriduBold" align="right" style="width:50px;">141,28</td><td class="bunkaGriduBold" align="right" style="width:80px;background-color:#996600;">
+                                    <span>83,80</span>
+                                </td><td class="bunkaGriduBold" align="left" style="width:45px;">
+                                    <span></span>
+                                </td>
+				</tr><tr style="background-color:#FFFFFF;">
+					<td class="bunkaGridu" align="left" style="width:90px;">
+                                    <span>14.10.2026 01:00</span>
+                                </td><td class="bunkaGriduBold" align="right" style="width:50px;">141,32</td><td class="bunkaGriduBold" align="right" style="width:80px;">
+                                    <span>104,4</span>
+                                </td><td class="bunkaGriduBold" align="left" style="width:45px;">
+                                    <span></span>
+                                </td>
+				</tr><tr style="background-color:#FFFFFF;">
+					<td class="bunkaGridu" align="left" style="width:90px;">
+                                    <span>14.10.2026 00:00</span>
+                                </td><td class="bunkaGriduBold" align="right" style="width:50px;">141,39</td><td class="bunkaGriduBold" align="right" style="width:80px;">
+                                    <span>115,6</span>
+                                </td><td class="bunkaGriduBold" align="left" style="width:45px;">
+                                    <span></span>
+                                </td>
+				</tr><tr style="background-color:#FFFFFF;">
+					<td class="bunkaGridu" align="left" style="width:90px;">
+                                    <span>13.10.2026 23:00</span>
+                                </td><td class="bunkaGriduBold" align="right" style="width:50px;">141,38</td><td class="bunkaGriduBold" align="right" style="width:80px;">
+                                    <span>115,6</span>
+                                </td><td class="bunkaGriduBold" align="left" style="width:45px;">
+                                    <span></span>
+                                </td>
+				</tr><tr style="background-color:#FFFFFF;">
+					<td class="bunkaGridu" align="left" style="width:90px;">
+                                    <span>13.10.2026 22:00</span>
+                                </td><td class="bunkaGriduBold" align="right" style="width:50px;">141,38</td><td class="bunkaGriduBold" align="right" style="width:80px;">
+                                    <span>115,6</span>
+                                </td><td class="bunkaGriduBold" align="left" style="width:45px;">
+                                    <span></span>
+                                </td>
+				</tr><tr style="background-color:#FFFFFF;">
+					<td class="bunkaGridu" align="left" style="width:90px;">
+                                    <span>13.10.2026 21:00</span>
+                                </td><td class="bunkaGriduBold" align="right" style="width:50px;">141,37</td><td class="bunkaGriduBold" align="right" style="width:80px;">
+                                    <span>111,4</span>
+                                </td><td class="bunkaGriduBold" align="left" style="width:45px;">
+                                    <span></span>
+                                </td>
+				</tr><tr style="background-color:#FFFFFF;">
+					<td class="bunkaGridu" align="left" style="width:90px;">
+                                    <span>13.10.2026 20:00</span>
+                                </td><td class="bunkaGriduBold" align="right" style="width:50px;">141,40</td><td class="bunkaGriduBold" align="right" style="width:80px;">
+                                    <span>93,74</span>
+                                </td><td class="bunkaGriduBold" align="left" style="width:45px;">
+                                    <span></span>
+                                </td>
+				</tr><tr style="background-color:#FFFFFF;">
+					<td class="bunkaGridu" align="left" style="width:90px;">
+                                    <span>13.10.2026 19:00</span>
+                                </td><td class="bunkaGriduBold" align="right" style="width:50px;">141,41</td><td class="bunkaGriduBold" align="right" style="width:80px;background-color:#996600;">
+                                    <span>79,08</span>
+                                </td><td class="bunkaGriduBold" align="left" style="width:45px;">
+                                    <span></span>
+                                </td>
+				</tr><tr style="background-color:#FFFFFF;">
+					<td class="bunkaGridu" align="left" style="width:90px;">
+                                    <span>13.10.2026 18:00</span>
+                                </td><td class="bunkaGriduBold" align="right" style="width:50px;">141,41</td><td class="bunkaGriduBold" align="right" style="width:80px;background-color:#996600;">
+                                    <span>73,34</span>
+                                </td><td class="bunkaGriduBold" align="left" style="width:45px;">
+                                    <span></span>
+                                </td>
+				</tr><tr style="background-color:#FFFFFF;">
+					<td class="bunkaGridu" align="left" style="width:90px;">
+                                    <span>13.10.2026 07:00</span>
+                                </td><td class="bunkaGriduBold" align="right" style="width:50px;">141,33</td><td class="bunkaGriduBold" align="right" style="width:80px;">
+                                    <span></span>
+                                </td><td class="bunkaGriduBold" align="left" style="width:45px;">
+                                    <span></span>
+                                </td>
+				</tr><tr style="background-color:#FFFFFF;">
+					<td class="bunkaGridu" align="left" style="width:90px;">
+                                    <span>12.10.2026 07:00</span>
+                                </td><td class="bunkaGriduBold" align="right" style="width:50px;">141,38</td><td class="bunkaGriduBold" align="right" style="width:80px;background-color:#996600;">
+                                    <span>73,34</span>
+                                </td><td class="bunkaGriduBold" align="left" style="width:45px;">
+                                    <span></span>
+                                </td>
+				</tr><tr style="background-color:#FFFFFF;">
+					<td class="bunkaGridu" align="left" style="width:90px;">
+                                    <span>11.10.2026 07:00</span>
+                                </td><td class="bunkaGriduBold" align="right" style="width:50px;">141,39</td><td class="bunkaGriduBold" align="right" style="width:80px;background-color:#996600;">
+                                    <span>82,62</span>
+                                </td><td class="bunkaGriduBold" align="left" style="width:45px;">
+                                    <span></span>
+                                </td>
+				</tr><tr style="background-color:#FFFFFF;">
+					<td class="bunkaGridu" align="left" style="width:90px;">
+                                    <span>10.10.2026 07:00</span>
+                                </td><td class="bunkaGriduBold" align="right" style="width:50px;">141,38</td><td class="bunkaGriduBold" align="right" style="width:80px;">
+                                    <span>103,0</span>
+                                </td><td class="bunkaGriduBold" align="left" style="width:45px;">
+                                    <span></span>
+                                </td>
+				</tr><tr style="background-color:#FFFFFF;">
+					<td class="bunkaGridu" align="left" style="width:90px;">
+                                    <span>09.10.2026 07:00</span>
+                                </td><td class="bunkaGriduBold" align="right" style="width:50px;">141,30</td><td class="bunkaGriduBold" align="right" style="width:80px;">
+                                    <span></span>
+                                </td><td class="bunkaGriduBold" align="left" style="width:45px;">
+                                    <span></span>
+                                </td>
+				</tr><tr style="background-color:#FFFFFF;">
+					<td class="bunkaGridu" align="left" style="width:90px;">
+                                    <span>08.10.2026 07:00</span>
+                                </td><td class="bunkaGriduBold" align="right" style="width:50px;">141,38</td><td class="bunkaGriduBold" align="right" style="width:80px;">
+                                    <span></span>
+                                </td><td class="bunkaGriduBold" align="left" style="width:45px;">
+                                    <span></span>
+                                </td>
+				</tr>
+			</table>
+		</div><span class="text1">H — </span><span class="text1">Vodní stav</span><br/>
+                    <span class="text1">Q — </span><span class="text1">Průtok</span><br/>
+                    <span class="text1">Q<sub>N</sub> — </span><span class="text1">N-leté průtoky</span></td>
+	</tr><tr>
+		<td valign="top" style="height:13px;">
+                    &nbsp;</td>
+	</tr><tr>
+		<td valign="top"></td>
+	</tr>
+</table>
+
+                    </div>
+                    <div id="MobilniAppDiv" style="padding: 5px;">
+                        <span id="MobilniAppInfo" class="text1">Tyto informace jsou dostupné i přes aplikaci pro mobilní telefony s OS Android -</span>&nbsp;
+                        <a id="MobilniAppHL" class="zahlavi1" href="https://play.google.com/store/apps/details?id=cz.pla.sap" target="_blank">Stavy a průtoky</a>
+                    </div>
+                    <div id="logaDiv" style="width: 100%; border-top: 1px solid #AAAAAA; padding-top: 5px; display: block; height: 40px;">
+                        <span id="logoPovodiSpan" style="float: left; text-align: left; width: 20%;">
+                            <a id="MaleLogoPovodiHL" href="https://www.pla.cz" target="_blank" style="display:inline-block;height:24px;vertical-align: text-bottom"><img src="../../Images/logo_male_4.gif" alt="" /></a>&nbsp;
+                            <span id="PovodiLbl" class="text1">Povodí Labe</span><span class="text1">, státní podnik</span>
+                            <span id="PovodiCopyLbl" class="text1">©</span>
+                            <span id="PovodiRokLbl" class="text1">2026</span>
+                        </span>
+                        <span id="logoChmuSpan" style="float: left; text-align: center; width: 45%;">
+                            <span id="System1Lbl" class="text1">Systém využívá i data z měřících stanic</span>
+                            <a id="ChmuLogoHL" href="https://www.chmi.cz/" target="_blank" style="display:inline-block;height:24px;vertical-align: text-bottom"><img src="../../Images/chmu_male.gif" alt="" /></a>&nbsp;
+                            <span id="System2Lbl" class="text1">Českého hydrometeorologického ústavu &copy;</span>
+                            <span id="SystemRokLbl" class="text1">2026</span>
+                        </span>
+                        <span id="logoMgeSpan" style="float: right; text-align: right; width: 30%;">
+                            <span id="Vyrobeno1Lbl" class="text1">Aplikace vyrobena firmou</span>
+                            <a id="MgeLogoHL" href="http://www.mgedata.com/" target="_blank" style="display:inline-block;height:24px;vertical-align: text-bottom"><img src="../../Images/mgedata_male.gif" alt="" /></a>&nbsp;
+                            <span id="Vyrobeno2Lbl" title="Verze 6.00 (sestaveno 3.7.2024); Pavel Staněk : OMDAC a FW4; Jakub Hýl : design aplikace a programování; Miroslav Hýl : db model a procedury; Jan Řičica : původní aplikace a grafické knihovny; Ali Harmim : mapové podklady; Jan Kaigl : vedení projektu;" class="text1" style="cursor: help;">MGE Data s.r.o. &copy; 1996 -</span>
+                            <span id="VyrobenoRokLbl" class="text1">2020</span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</body>
+</html>

@@ -36,6 +36,10 @@ Last reviewed: 2026-10-14.
   - `www.pvl.cz` and `sap.pmo.cz`: no robots.txt (404/redirect). `www.pmo.cz`: standard WordPress file.
 - Scraping is fragile and legally unclear. The preferred fix is to **ask each povodí for permission or a data feed**.
 
+### Povodí Labe station pages (weirs)
+- `weirs.mjs` scrapes two station pages (Střekov, Opatovice nad Labem) from `pla.cz/portal/sap`. Same portal, same
+  open terms questions as the reservoir pages above (and the same MGE Data authorship).
+
 ### OpenStreetMap
 - Map tiles: attribution "© OpenStreetMap" is shown. The public tile server is for light use only
   (https://operations.osmfoundation.org/policies/tiles/). Heavy or public use needs a tile provider.

@@ -19,6 +19,10 @@ Last reviewed: 2026-10-14.
   "informativní údaje, nejde o výstražnou službu" disclaimer either way.
 - Attribution today: only "zdroj ČHMÚ" in the sidebar subtitle. Probably needs the full wording the terms ask for.
 
+- Long-term characteristics (`characteristic/hydrological_characteristic/`, used by `climate.mjs`) come from the same
+  open data set and fall under the same terms. Their reference periods differ per station (1931-1960 up to 1991-2020, some
+  only a few years); the UI shows the period per station and flags periods under 20 years.
+
 ### Povodí reservoir portals (reservoirs)
 - Sources: scraped HTML tables from the five state-enterprise portals (Povodí Labe, Vltavy, Ohře, Odry, Moravy).
   See `PLATFORMS` in `dams.mjs`. No API and no published reuse terms were found.

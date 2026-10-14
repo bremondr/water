@@ -6,6 +6,7 @@ import { readFile } from 'node:fs/promises';
 import { scrapeAll, finalizeReservoirs } from './dams.mjs';
 import { scrapeWeirs, loadNoDataWeirs } from './weirs.mjs';
 import { povodi } from './basins.mjs';
+import { buildClimate } from './climate.mjs';
 import { createCache } from './cache.mjs';
 
 const BASE = 'https://opendata.chmi.cz/hydrology/now';
@@ -48,6 +49,8 @@ async function buildStations() {
   const m3 = (await getJson(`${BASE}/metadata/meta3.json`)).data.data;
   const c3 = m3.header.split(',');
   const pov = new Map(m3.values.map(v => [v[c3.indexOf('objID')], povodi(v[c3.indexOf('HLGP4')])]));
+  // long-term averages published in the station metadata: HA = water level (cm), QA = discharge (m3/s)
+  const avg = new Map(m3.values.map(v => [v[c3.indexOf('objID')], { ha: v[c3.indexOf('HA')], qa: v[c3.indexOf('QA')] }]));
   const meta = await getJson(`${BASE}/metadata/meta1.json`);
   const { header, values } = meta.data.data;
   const cols = header.split(',');
@@ -64,7 +67,7 @@ async function buildStations() {
         id: s.objID, name: s.STATION_NAME, river: s.STREAM_NAME, lat: s.GEOGR1, lon: s.GEOGR2,
         // flood-activity thresholds: level (cm) and flow (m3/s)
         h: [s.SPA1H, s.SPA2H, s.SPA3H, s.SPA4H], q: [s.SPA1Q, s.SPA2Q, s.SPA3Q, s.SPA4Q],
-        pov: pov.get(s.objID) || 'Ostatní', dryH: s.DRYH, dryQ: s.DRYQ, H: [], Q: [],
+        pov: pov.get(s.objID) || 'Ostatní', dryH: s.DRYH, dryQ: s.DRYQ, ha: avg.get(s.objID)?.ha ?? null, qa: avg.get(s.objID)?.qa ?? null, H: [], Q: [],
       };
       // two previous days plus today => at least 48 h of 10-minute data
       const parts = [];
@@ -109,17 +112,22 @@ async function buildReservoirs(prev) {
 
 const stations = createCache({ name: 'stations', ttl: TTL, build: buildStations });
 const reservoirs = createCache({ name: 'reservoirs', ttl: TTL, build: buildReservoirs });
+// long-term characteristics hardly ever change (fixed 1991-2020 reference period): refresh weekly
+const climate = createCache({ name: 'climate', ttl: 7 * 24 * 3600 * 1000, build: buildClimate });
 
 const json = { 'content-type': 'application/json', 'cache-control': 'max-age=60' };
 
 http.createServer(async (req, res) => {
   try {
     if (req.url.startsWith('/api/reservoirs')) { res.writeHead(200, json); return res.end(await reservoirs.get()); }
+    // the browser reuses the pure helpers of climate.mjs (exceedanceDays), so there is one copy of that logic
+    if (req.url === '/climate.mjs') { res.writeHead(200, { 'content-type': 'text/javascript; charset=utf-8' }); return res.end(await readFile(new URL('./climate.mjs', import.meta.url))); }
+    if (req.url.startsWith('/api/climate')) { res.writeHead(200, { ...json, 'cache-control': 'max-age=3600' }); return res.end(await climate.get()); }
     if (req.url.startsWith('/api/stations')) { res.writeHead(200, json); return res.end(await stations.get()); }
     res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
     res.end(await readFile(new URL('./index.html', import.meta.url)));
   } catch (e) { res.writeHead(502); res.end(String(e)); }
 }).listen(PORT, () => {
   console.log(`http://localhost:${PORT}`);
-  reservoirs.start(); stations.start();   // small and quick first, so it is not starved by the 1,600-request station build
+  reservoirs.start(); stations.start(); climate.start();   // small and quick first, so it is not starved by the 1,600-request station build
 });

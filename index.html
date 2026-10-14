@@ -42,7 +42,7 @@ input,select{width:100%;padding:9px 10px;border:1px solid var(--line);border-rad
 .big span.badge{color:#fff}
 .badge{display:inline-block;padding:2px 10px;border-radius:99px;font-size:13px;font-weight:600}
 .tabs{display:flex;gap:6px;padding:0 16px 8px}
-#chart{padding:0 8px 8px}
+#chart,.chart{padding:0 8px 8px}
 svg text{fill:var(--muted);font-size:11px}
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:0 16px 12px}
 .stat{background:var(--bg);border-radius:8px;padding:8px 10px}.stat span{display:block;font-size:12px;color:var(--muted)}
@@ -116,7 +116,8 @@ const fmt=(v,d=0)=>v==null?'–':v.toLocaleString('cs-CZ',{maximumFractionDigits
 const fdt=t=>new Date(t*1000).toLocaleString('cs-CZ',{day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'});
 
 let S=[],sel=null,filterDeg=null,metric='H',markers=new Map();
-let D=[],selD=null,mode='st',damErrors=[],weirMetric='H';
+let D=[],selD=null,mode='st',damErrors=[],weirMetric='H',climate={};
+let exceedanceDays=()=>null;   // loaded from /climate.mjs (shared with the server and its tests)
 
 // station status = highest flood degree reached by the current level (or flow if no level thresholds)
 function status(s){
@@ -161,24 +162,89 @@ function render(){
 
 function chart(s,key,hours=48,dec){
   const a=s[key],th=key=='H'?s.h:s.q,dry=key=='H'?s.dryH:s.dryQ;
+  const avgV=key=='H'?s.ha:(climate[s.id]?.qa??s.qa);   // long-term average (stations only)
   if(!a.length)return'<p class="sub" style="padding:0 16px">Pro tuto veličinu nejsou data.</p>';
   const t1=a[a.length-1][0],p=a.filter(x=>x[0]>=t1-hours*3600),t0=p[0][0];
   const W=440,H=220,m={l:44,r:10,t:10,b:24};
   const vals=p.map(x=>x[1]);let lo=Math.min(...vals),hi=Math.max(...vals);
   // pull the next threshold into view when the river is close to it
   const nxt=th.find(t=>t!=null&&t>hi);if(nxt!=null&&nxt-hi<(hi-lo+1)*3)hi=nxt;
+  // keep the long-term average in view when it is not far from the data
+  if(avgV!=null){const span=(hi-lo)||1;if(avgV>hi&&avgV-hi<span)hi=avgV;else if(avgV<lo&&lo-avgV<span)lo=avgV}
   const pad=(hi-lo||1)*.12;lo-=pad;hi+=pad;
   const x=t=>m.l+(t-t0)/(t1-t0)*(W-m.l-m.r),y=v=>H-m.b-(v-lo)/(hi-lo)*(H-m.t-m.b);
   let g='';
   const ticks=4;for(let i=0;i<=ticks;i++){const v=lo+(hi-lo)*i/ticks;g+=`<line x1="${m.l}" x2="${W-m.r}" y1="${y(v)}" y2="${y(v)}" stroke="${css('--line')}"/><text x="${m.l-6}" y="${y(v)+4}" text-anchor="end">${fmt(v,dec??(hi-lo<10?1:0))}</text>`}
   th.forEach((t,i)=>{if(t!=null&&t>lo&&t<hi)g+=`<line x1="${m.l}" x2="${W-m.r}" y1="${y(t)}" y2="${y(t)}" stroke="${css(COL[i+1])}" stroke-dasharray="4 3"/><text x="${W-m.r}" y="${y(t)-3}" text-anchor="end" style="fill:${css(COL[i+1])}">${SHORT[i+1]} ${fmt(t,key=='Q'?1:0)}</text>`});
   if(dry!=null&&dry>lo&&dry<hi)g+=`<line x1="${m.l}" x2="${W-m.r}" y1="${y(dry)}" y2="${y(dry)}" stroke="${css('--dry')}" stroke-dasharray="2 3"/><text x="${W-m.r}" y="${y(dry)-3}" text-anchor="end">nízký stav</text>`;
+  if(avgV!=null&&avgV>lo&&avgV<hi)g+=`<line x1="${m.l}" x2="${W-m.r}" y1="${y(avgV)}" y2="${y(avgV)}" stroke="${css('--text')}" stroke-opacity=".55" stroke-dasharray="1 4" stroke-width="2"/><text x="${m.l+4}" y="${y(avgV)-4}">dlouhodobý průměr ${fmt(avgV,key=='Q'?(avgV<10?2:1):0)}</text>`;
   for(let k=0;k<=4;k++){const t=t0+(t1-t0)*k/4;g+=`<text x="${x(t)}" y="${H-6}" text-anchor="${k==0?'start':k==4?'end':'middle'}">${fdt(t)}</text>`}
   const d=p.map((q,i)=>(i?'L':'M')+x(q[0]).toFixed(1)+' '+y(q[1]).toFixed(1)).join('');
   const lp=p[p.length-1];
   return`<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Graf za posledních ${hours} hodin">${g}
    <path d="${d}" fill="none" stroke="${css('--accent')}" stroke-width="2" stroke-linejoin="round"/>
    <circle cx="${x(lp[0])}" cy="${y(lp[1])}" r="4" fill="${css('--accent')}"/></svg>`;
+}
+
+{const m=new URLSearchParams(location.search).get('m');if(m==='Q'||m==='H')metric=m}   // ?m=Q opens stations on the flow tab
+const MON=['led','úno','bře','dub','kvě','čvn','čvc','srp','zář','říj','lis','pro'];
+const MONTH_LONG=['leden','únor','březen','duben','květen','červen','červenec','srpen','září','říjen','listopad','prosinec'];
+const pragueMonth=t=>Number(new Intl.DateTimeFormat('en-US',{timeZone:'Europe/Prague',month:'numeric'}).format(new Date(t*1000)));
+function relWord(ratio){return ratio<.5?'výrazně podprůměrný':ratio<.8?'podprůměrný':ratio<=1.2?'průměrný':ratio<=2?'nadprůměrný':'výrazně nadprůměrný'}
+function relColor(ratio){return ratio<.5?'var(--d4)':ratio<.8?'var(--dry)':ratio<=1.2?'var(--d0)':ratio<=2?'var(--d2)':'var(--d3)'}
+
+// 12 months on a log axis: band = min-max of daily flows in that month, dot = long-term average, dashed = flow now
+function monthlyChart(c,cur,mi){
+  const W=440,H=190,m={l:44,r:8,t:12,b:24};
+  const pos=[...c.min,...c.avg].filter(v=>v>0);if(!pos.length)return'';
+  const lo=Math.pow(10,Math.floor(Math.log10(Math.min(...pos,cur>0?cur:Infinity)))),hi=Math.pow(10,Math.ceil(Math.log10(Math.max(...c.max,cur||0))));
+  const ly=v=>Math.log10(Math.max(v,lo)),span=Math.log10(hi)-Math.log10(lo)||1;
+  const y=v=>H-m.b-(ly(v)-Math.log10(lo))/span*(H-m.t-m.b),bw=(W-m.l-m.r)/12,x=i=>m.l+bw*(i+.5);
+  let g='';
+  for(let e=Math.log10(lo);e<=Math.log10(hi)+1e-9;e++){const v=Math.pow(10,e);g+=`<line x1="${m.l}" x2="${W-m.r}" y1="${y(v)}" y2="${y(v)}" stroke="${css('--line')}"/><text x="${m.l-6}" y="${y(v)+4}" text-anchor="end">${fmt(v,v<1?(v<.1?2:1):0)}</text>`}
+  MON.forEach((n,i)=>{g+=`<text x="${x(i)}" y="${H-7}" text-anchor="middle" style="${i===mi?'font-weight:700;fill:var(--text)':''}">${n}</text>`});
+  c.avg.forEach((v,i)=>{if(v==null)return;const top=y(c.max[i]??v),bot=y(c.min[i]??v);
+    g+=`<rect x="${x(i)-bw*.28}" y="${top}" width="${bw*.56}" height="${Math.max(2,bot-top)}" rx="3" fill="${css('--accent')}" fill-opacity="${i===mi?.32:.14}"/>`});
+  g+=`<path d="${c.avg.map((v,i)=>v==null?'':(i&&c.avg[i-1]!=null?'L':'M')+x(i).toFixed(1)+' '+y(v).toFixed(1)).join('')}" fill="none" stroke="${css('--accent')}" stroke-width="1.5" stroke-opacity=".7"/>`;
+  c.avg.forEach((v,i)=>{if(v!=null)g+=`<circle cx="${x(i)}" cy="${y(v)}" r="${i===mi?5:3}" fill="${css('--accent')}"/>`});
+  if(cur>0)g+=`<line x1="${m.l}" x2="${W-m.r}" y1="${y(cur)}" y2="${y(cur)}" stroke="${css('--text')}" stroke-dasharray="5 3" stroke-width="1.5"/><text x="${W-m.r}" y="${y(cur)-4}" text-anchor="end" style="fill:var(--text)">nyní ${fmt(cur,cur<10?2:1)} m³/s</text>`;
+  return`<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Měsíční průměry průtoku">${g}</svg>`;
+}
+
+// Long-term averages for the open station (ČHMÚ reference period, flows 1991-2020)
+function longTerm(s){
+  const c=climate[s.id];
+  if(metric==='H'){
+    if(s.ha==null||s.st.h==null)return'';
+    const diff=s.st.h-s.ha;
+    return`<div class="thr"><b>Dlouhodobý průměr</b>
+     <div style="display:block">Průměrný vodní stav: <b>${fmt(s.ha)} cm</b> · nyní ${fmt(s.st.h)} cm (${diff>=0?'+':'−'}${fmt(Math.abs(diff))} cm)</div></div>
+     <div class="sub" style="padding:0 16px 12px">Zdroj: ČHMÚ, metadata stanice. Referenční období ČHMÚ u vodních stavů neuvádí.</div>`;
+  }
+  const qa=c?.qa??s.qa,q=s.st.q;
+  if(qa==null)return'';
+  const last=s.Q.length?s.Q[s.Q.length-1][0]:null,mi=last?pragueMonth(last)-1:new Date().getMonth();
+  const period=(c?.period||'').replace(/s*-s*/g,'–')||'období neuvedeno';
+  const yrs=/^(d{4})–(d{4})$/.exec(period),shortP=yrs&&(+yrs[2]-+yrs[1]+1)<20;
+  let out='<div class="thr"><b>Dlouhodobý průměr ('+period+')</b>';
+  out+=`<div style="display:block">Roční průměr Qa: <b>${fmt(qa,qa<10?2:1)} m³/s</b>${q!=null&&qa>0?` · nyní ${fmt(q/qa*100,0)} %`:''}</div>`;
+  if(c?.avg&&c.avg[mi]!=null&&q!=null){
+    const ma=c.avg[mi],ratio=ma>0?q/ma:null;
+    out+=`<div style="display:block">Průměr za ${MONTH_LONG[mi]}: <b>${fmt(ma,ma<10?2:1)} m³/s</b> (denní průtoky ${fmt(c.min[mi],c.min[mi]<10?2:1)}–${fmt(c.max[mi],c.max[mi]<10?2:1)} m³/s)</div>`;
+    if(ratio!=null)out+=`<div style="display:block">Nyní <span class="badge" style="background:${relColor(ratio)}">${relWord(ratio)}</span> · ${fmt(ratio*100,0)} % měsíčního průměru</div>`;
+  }
+  const ex=c?.mdq&&q!=null?exceedanceDays(c.mdq,q):null;
+  if(ex){
+    const t=ex.bound==='>'?`Průtok je nižší než nejnižší z publikovaných M-denních průtoků (Q${ex.days}), tedy je překročen víc než ${ex.days} dní v roce.`
+      :ex.bound==='<'?`Průtok je vyšší než Q${ex.days}, tedy je překročen méně než ${ex.days} dní v roce.`
+      :`Takový průtok je v průměru dosažen nebo překročen asi ${ex.days} dní v roce.`;
+    out+=`<div style="display:block">${t}</div>`;
+  }
+  if(shortP)out+=`<div class="note warn" style="margin:8px 0 0">Průměr vychází jen z ${+yrs[2]-+yrs[1]+1} let měření, bere se jako orientační.</div>`;
+  out+='</div>';
+  if(c?.avg)out+=`<div class="chart">${monthlyChart(c,q,mi)}</div><div class="sub" style="padding:0 16px 12px">Body: dlouhodobý průměr za měsíc. Pruh: nejnižší a nejvyšší denní průtok v měsíci. Přerušovaně: průtok nyní. Svislá osa je logaritmická.</div>`;
+  else out+='<div class="sub" style="padding:0 16px 12px">'+(climate&&Object.keys(climate).length?'Měsíční průměry pro tuto stanici ČHMÚ nezveřejňuje.':'Načítám měsíční průměry…')+'</div>';
+  return out;
 }
 
 function open(s,pan=true){
@@ -195,7 +261,8 @@ function open(s,pan=true){
    <div class="tabs">${s.H.length?`<button class="chip" data-m="H" aria-pressed="${metric=='H'}">Vodní stav</button>`:''}${s.Q.length?`<button class="chip" data-m="Q" aria-pressed="${metric=='Q'}">Průtok</button>`:''}</div>
    <div id="chart">${chart(s,metric)}</div>
    <div class="stats"><div class="stat"><span>Min (48 h)</span>${a.length?fmt(Math.min(...vs),d)+' '+u:'–'}</div><div class="stat"><span>Max (48 h)</span>${a.length?fmt(Math.max(...vs),d)+' '+u:'–'}</div><div class="stat"><span>Měření (48 h)</span>${vs.length}</div></div>
-   <div class="thr">${th.map((t,i)=>t!=null?`<div><span class="dot" style="background:${css(COL[i+1])}"></span>${DEG[i+1]}: <b>${fmt(t,d)} ${u}</b></div>`:'').join('')}</div>`;
+   <div class="thr">${th.map((t,i)=>t!=null?`<div><span class="dot" style="background:${css(COL[i+1])}"></span>${DEG[i+1]}: <b>${fmt(t,d)} ${u}</b></div>`:'').join('')}</div>
+   ${longTerm(s)}`;
   el.classList.add('open');
   el.querySelector('.x').onclick=()=>{sel=null;history.replaceState(null,'',location.pathname);el.classList.remove('open');render()};
   el.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{metric=b.dataset.m;open(s,false)});
@@ -372,6 +439,8 @@ async function load(){
     else if(location.hash.length>1){const s=S.find(x=>x.id===location.hash.slice(1));if(s)open(s)}
   }catch(e){$('updated').textContent='Data se nepodařilo načíst: '+e.message}
 }
+import('/climate.mjs').then(m=>{exceedanceDays=m.exceedanceDays;if(mode==='st'&&sel)open(sel,false)}).catch(()=>{});
+fetch('/api/climate').then(r=>r.ok?r.json():null).then(b=>{if(b){climate=b.stations||{};if(mode==='st'&&sel)open(sel,false)}}).catch(()=>{});
 load().then(()=>{const p=new URLSearchParams(location.search).get('pov');if(p){$('pov').value=p;$('pov').onchange()}});setInterval(load,10*60*1000);
 loadDams().then(()=>{const u=new URLSearchParams(location.search);if(u.get('mode')==='dam'){setMode('dam');const d=D.find(x=>x.key===u.get('id'));if(d)openDam(d)}});setInterval(loadDams,10*60*1000);
 </script>

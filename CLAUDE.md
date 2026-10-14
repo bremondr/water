@@ -17,6 +17,9 @@ Prototype web app. Node 20+ (ESM, no dependencies, no build step). UI language i
 - `weirs-nodata.json`: 26 more Elbe weirs/locks (Pardubice to Lovosice, plus 3 on the upper Labe) with **no** live data anywhere;
   they appear greyed as "bez dat". Compiled from OSM, cs.wikipedia (Střední/Dolní Labe vodní cesta) and Povodí Labe pages;
   `rkm` is the Elbe-km scheme. Hadík (a former stage) is deliberately left out. Entries not `high` confidence show as approximate.
+- `climate.mjs`: long-term characteristics per station (ČHMÚ `characteristic/`: Qa, monthly avg/min/max flow, M-day flow-duration
+  curve, reference period 1991-2020), served at `/api/climate`, cached 7 days. Level averages (`ha`) and `qa` come from station
+  metadata and ride along in `/api/stations`.
 - `basins.mjs`: station → povodí mapping from the hydrological order number (approximate).
 - `cache.mjs`: stale-while-revalidate cache persisted to `.cache/` (gitignored). A restart serves the last good data
   instantly. A failed refresh keeps the previous value.

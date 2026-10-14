@@ -9,7 +9,7 @@ export const ZONE_LAYERS = [['ZaplavUzemi_Q5', 1], ['ZaplavUzemi_Q20', 2], ['Zap
 export async function fetchZoneFeatures(typeName, { south, west, north, east }) {
   const q = new URLSearchParams({
     service: 'WFS', version: '2.0.0', request: 'GetFeature', typeNames: typeName, outputFormat: 'GEOJSON', srsName: 'EPSG:4326',
-    bbox: `${south},${west},${north},${east},urn:ogc:def:crs:EPSG::4326`, count: '1000',
+    bbox: `${south - 0.004},${west - 0.004},${north + 0.004},${east + 0.004},urn:ogc:def:crs:EPSG::4326`, count: '1000',   // margin: the stored coordinates are ~100 m off (see datum fix)
   });
   const r = await fetch(`${WFS}?${q}`, { signal: AbortSignal.timeout(120_000) });
   if (!r.ok) throw new Error(`${r.status} ${typeName}`);
@@ -21,16 +21,31 @@ export async function fetchZoneFeatures(typeName, { south, west, north, east }) 
 // The WFS answers EPSG:4326 in latitude, longitude order, but GeoJSON consumers expect lon, lat. Detect per pair.
 const lonLat = ([a, b]) => (a > 40 && a < 60 && b > 5 && b < 25 ? [b, a] : [a, b]);
 
+// DATUM FIX. The zones are stored in S-JTSK (Bessel ellipsoid). The VÚV WFS hands them out as "EPSG:4326" but the numbers are
+// geodetic coordinates on the Bessel ellipsoid, i.e. the datum shift to WGS84 was never applied, which leaves every outline
+// ~70 m west and ~80 m south of where it belongs (found by correlating the outlines with terrain edges, 2026-10-15; the
+// shift predicted from the standard S-JTSK parameters +towgs84=589,76,480 matches what the terrain shows).
+// besselAsWgsToWgs() applies that geocentric translation: geodetic(Bessel) -> XYZ -> +translation -> geodetic(WGS84).
+const ELL = { bessel: { a: 6377397.155, f: 1 / 299.1528128 }, wgs: { a: 6378137, f: 1 / 298.257223563 } };
+const TOWGS84 = [589, 76, 480];
+const toXYZ = (lat, lon, e) => { const phi = lat * Math.PI / 180, lam = lon * Math.PI / 180, e2 = 2 * e.f - e.f ** 2, N = e.a / Math.sqrt(1 - e2 * Math.sin(phi) ** 2); return [N * Math.cos(phi) * Math.cos(lam), N * Math.cos(phi) * Math.sin(lam), N * (1 - e2) * Math.sin(phi)]; };
+const toGeo = ([X, Y, Z], e) => { const e2 = 2 * e.f - e.f ** 2, p = Math.hypot(X, Y); let phi = Math.atan2(Z, p * (1 - e2)); for (let i = 0; i < 8; i++) { const N = e.a / Math.sqrt(1 - e2 * Math.sin(phi) ** 2); phi = Math.atan2(Z + e2 * N * Math.sin(phi), p); } return [phi * 180 / Math.PI, Math.atan2(Y, X) * 180 / Math.PI]; };
+export function besselAsWgsToWgs(lon, lat) {
+  const [X, Y, Z] = toXYZ(lat, lon, ELL.bessel);
+  const [la, lo] = toGeo([X + TOWGS84[0], Y + TOWGS84[1], Z + TOWGS84[2]], ELL.wgs);
+  return [lo, la];                                       // lon, lat
+}
+
 // Pure: paint (OR) the polygons of `features` into `out` (Uint8Array width*height) with value `bit`.
 // `toPixel(lon, lat)` -> [x, y] in fractional pixels. Even-odd fill per polygon so holes stay empty.
-export function rasterizeFeatures(features, toPixel, width, height, bit, out) {
+export function rasterizeFeatures(features, toPixel, width, height, bit, out, { fixDatum = false } = {}) {
   for (const f of features) {
     const g = f.geometry; if (!g) continue;
     const polys = g.type === 'Polygon' ? [g.coordinates] : g.type === 'MultiPolygon' ? g.coordinates : [];
     for (const rings of polys) {
       const edges = []; let ymin = Infinity, ymax = -Infinity;
       for (const ring of rings) {
-        const pts = ring.map(c => toPixel(...lonLat(c)));
+        const pts = ring.map(c => toPixel(...(fixDatum ? besselAsWgsToWgs(...lonLat(c)) : lonLat(c))));
         for (let i = 0; i < pts.length; i++) {
           const [x1, y1] = pts[i], [x2, y2] = pts[(i + 1) % pts.length];
           if (y1 === y2) continue;
@@ -66,7 +81,7 @@ export async function zoneMask(meta) {
   const out = new Uint8Array(W * H), counts = {};
   for (const [layer, bit] of ZONE_LAYERS) {
     const features = await fetchZoneFeatures(layer, meta.bounds);
-    rasterizeFeatures(features, toPixel, W, H, bit, out);
+    rasterizeFeatures(features, toPixel, W, H, bit, out, { fixDatum: true });
     counts[layer] = features.length;
   }
   return { mask: out, counts };

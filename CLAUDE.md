@@ -26,7 +26,10 @@ Prototype web app. Node 20+ (ESM, no dependencies, no build step). UI language i
   Open `/experiments/flood/` after `node scripts/fetch-dem.mjs <stationId>` (data is gitignored; four stations were fetched
   during development). The DEM shows rivers at their level during the LiDAR survey, so stages below that stay in the channel.
   Official flood zones (Q5/Q20/Q100/Q500/active zone) come from the VÚV WFS (`zones.mjs`, rasterised onto the same grid, bit per
-  layer in `<id>.zones.bin`) and are drawn as outlines, with precision/recall/IoU against the modelled extent. The page can tilt the
+  layer in `<id>.zones.bin`) and are drawn as outlines. **The WFS coordinates lack the S-JTSK to WGS84 datum shift** (outlines were ~70 m
+  west and ~80 m south of the terrain): `zones.mjs` corrects it with `+towgs84=589,76,480`, and `npm run zone-offset <stationId>` checks the
+  alignment against the terrain (residual about 10 m). Re-fetch zones after touching that code.
+  Zones are drawn as outlines, with precision/recall/IoU against the modelled extent. The page can tilt the
   water surface (slope in cm/km along the channel direction derived from the flat river in the DEM, optionally estimated from
   neighbouring gauges) and can search the stage that best matches a zone. Known limits are listed on the page; do not present it as
   a forecast or a flood map.

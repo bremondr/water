@@ -179,3 +179,25 @@ test('rasterizeFeatures: even-odd fill keeps holes empty, ORs bits, and accepts 
   rasterizeFeatures([{ geometry: { type: 'Polygon', coordinates: [[[50.1, 14.1], [50.1, 14.9], [50.9, 14.9], [50.9, 14.1]]] } }], (lon, lat) => { seen.push([lon, lat]); return [0, 0]; }, 2, 2, 1, new Uint8Array(4));
   assert.deepEqual(seen[0], [14.1, 50.1]);
 });
+
+import { besselAsWgsToWgs } from '../zones.mjs';
+
+test('datum fix: Bessel-as-WGS84 coordinates move ~70 m west and ~80 m south in central Bohemia', () => {
+  const [lon, lat] = besselAsWgsToWgs(14.4692, 50.3523);
+  const east = (lon - 14.4692) * 111320 * Math.cos(50.3523 * Math.PI / 180), north = (lat - 50.3523) * 111320;
+  assert.ok(east < -65 && east > -80, `east shift ${east.toFixed(1)} m`);
+  assert.ok(north < -75 && north > -90, `north shift ${north.toFixed(1)} m`);
+});
+
+test('rasterizeFeatures with fixDatum shifts the outline relative to the raw coordinates', () => {
+  // 1 pixel = 1e-4 degree (~7-11 m); a polygon at the same coordinates lands a few pixels further west/south after the fix
+  const toPixel = (lon, lat) => [(lon - 14.46) / 1e-4, (50.36 - lat) / 1e-4];
+  const poly = [{ geometry: { type: 'Polygon', coordinates: [[[50.352, 14.468], [50.352, 14.470], [50.354, 14.470], [50.354, 14.468]]] } }];
+  const a = new Uint8Array(200 * 200), b = new Uint8Array(200 * 200);
+  rasterizeFeatures(poly, toPixel, 200, 200, 1, a);
+  rasterizeFeatures(poly, toPixel, 200, 200, 1, b, { fixDatum: true });
+  const centre = m => { let n = 0, sx = 0, sy = 0; m.forEach((v, i) => { if (v) { n++; sx += i % 200; sy += Math.floor(i / 200); } }); return [sx / n, sy / n]; };
+  const [ax, ay] = centre(a), [bx, by] = centre(b);
+  assert.ok(ax - bx > 3 && ax - bx < 12, `x moved ${(ax - bx).toFixed(1)} px west`);
+  assert.ok(by - ay > 3 && by - ay < 12, `y moved ${(by - ay).toFixed(1)} px south`);
+});

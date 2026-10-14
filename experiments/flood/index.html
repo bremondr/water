@@ -166,7 +166,9 @@ async function loadStation(id) {
   overlay?.remove(); overlay = L.imageOverlay(BLANK, bounds, { opacity: +$('opacity').value, interactive: false, zIndex: 5 }).addTo(map);
   zoneOverlay?.remove(); zoneOverlay = L.imageOverlay(BLANK, bounds, { interactive: false, zIndex: 6 }).addTo(map);
   stationMarker?.remove(); stationMarker = L.circleMarker([st.lat, st.lon], { radius: 7, color: '#fff', weight: 2, fillColor: '#c2185b', fillOpacity: 1 }).addTo(map).bindTooltip(`${st.name}, vodočet`);
-  map.fitBounds(bounds);
+  map.fitBounds(bounds, { animate: false });
+  const v = (q.get('view') || '').split(',').map(Number);          // ?view=lat,lon,zoom for deep links and screenshots
+  if (v.length === 3 && v.every(Number.isFinite)) map.setView([v[0], v[1]], v[2], { animate: false });
 
   document.querySelectorAll('[data-zone]').forEach(box => { box.disabled = !zones; box.checked = wanted.zones.includes(box.dataset.zone) && !!zones; });
   $('zoneNote').innerHTML = zones ? '' : '<div class="note warn">Pro tuto stanici nejsou stažená záplavová území. Spusťte znovu node scripts/fetch-dem.mjs.</div>';

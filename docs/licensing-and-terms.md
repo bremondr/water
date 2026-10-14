@@ -54,7 +54,8 @@ Last reviewed: 2026-10-14.
   PDF that could not be retrieved. Confirm DMR 5G is covered and credit ČÚZK before publishing.
 - Official flood zones (Q5, Q20, Q100, Q500, active zone): VÚV TGM WFS at `ags.vuv.cz/.../isvs_voda/MapServer/WFSServer` (capabilities
   state no fees and no access constraints), credit "© VÚV TGM, HEIS VÚV". Derived rasters are gitignored; reuse terms for
-  redistribution not checked.
+  redistribution not checked. The WFS data are mislabelled (Bessel coordinates marked as WGS84), which `zones.mjs` corrects; worth telling
+  VÚV if this is ever published.
 - The experiment draws extents that look like flood maps. Keep it clearly labelled as an illustration (see the ČHMÚ "no warnings"
   point above) and do not publish it as a flood-risk tool without legal and domain review.
 

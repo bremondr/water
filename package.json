@@ -9,6 +9,7 @@
     "start": "node server.mjs",
     "test": "node --test \"test/*.test.mjs\"",
     "fixtures": "node scripts/save-fixtures.mjs",
-    "geocode": "node geocode.mjs"
+    "geocode": "node geocode.mjs",
+    "zone-offset": "node scripts/zone-offset.mjs"
   }
 }

@@ -43,6 +43,11 @@ Last reviewed: 2026-10-14.
   attribution and the ODbL may impose share-alike on a published database. Check before publishing that file.
   `geocode.mjs` follows the Nominatim policy (1 request/s, identifying User-Agent).
 
+### Dam positions (second pass)
+- 32 positions in `dam-coords.json` were refined from OSM (Overpass, Nominatim) cross-checked with cs.wikipedia and
+  Wikidata coordinates. Wikipedia text is CC BY-SA, Wikidata is CC0, OSM is ODbL: mention all three in the
+  attribution/sources page. Mapy.com could not be used (its API needs a key, and its terms restrict bulk copying).
+
 ### Other
 - Leaflet 1.9.4 (BSD-2-Clause) loaded from cdnjs.
 - Mapy.com (Mapy.cz) was only used as a manual research aid for dam positions. Do not copy coordinates from it
@@ -62,5 +67,5 @@ Last reviewed: 2026-10-14.
 - [ ] Re-check robots.txt of all five portals at that time; honour any restrictions.
 - [ ] Add a visible "data bez záruky / informativní" disclaimer and a sources/attribution page in the app.
 - [ ] Replace the public OSM tile server with a provider that allows the expected traffic.
-- [ ] Review the ODbL implications of publishing `dam-coords.json`.
+- [ ] Review the ODbL (OSM) and CC BY-SA (Wikipedia) implications of publishing `dam-coords.json`, and credit them.
 - [ ] Decide whether the repo may become public (it contains scraper code and positions derived from OSM).

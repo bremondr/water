@@ -261,7 +261,7 @@ function openDam(d,pan=true){
    ${refGauges(d)}
    ${(d.warnings||[]).map(w=>`<div class="note warn">⚠ ${esc(w)}</div>`).join('')}
    ${d.stale?'<div class="note warn">Portál se nepodařilo načíst, zobrazuje se poslední známý stav.</div>':''}
-   ${d.approx?'<div class="note warn">Poloha nádrže je přibližná (střed obce nebo blízký objekt), skutečná hráz může být o několik km jinde.</div>':''}
+   ${d.approx?'<div class="note warn">Poloha je přibližná (střed nádrže nebo obce, ne hráz), skutečná hráz může být o několik set metrů až kilometrů jinde.</div>':''}
    ${d.note?`<div class="note">${esc(d.note)}</div>`:''}`;
   el.classList.add('open');
   el.querySelectorAll('[data-st]').forEach(b=>b.onclick=()=>{const s=S.find(x=>x.id===b.dataset.st);if(s){setMode('st');open(s)}});

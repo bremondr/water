@@ -35,3 +35,5 @@ Prototype web app. Node 20+ (ESM, no dependencies, no build step). UI language i
   `errors`; the others keep working.
 - Do not shorten the 10-minute cache TTL casually: see the politeness section in the licensing notes.
 - On Windows/Git Bash, very large heredocs with quotes can fail; write files with the editor tools instead.
+- Edits to `dam-coords.json` are baked into the cached `/api/reservoirs` response; delete `.cache/reservoirs.json`
+  and restart (or wait out the 10-minute TTL) to see them.

@@ -113,7 +113,7 @@ const fmt=(v,d=0)=>v==null?'–':v.toLocaleString('cs-CZ',{maximumFractionDigits
 const fdt=t=>new Date(t*1000).toLocaleString('cs-CZ',{day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'});
 
 let S=[],sel=null,filterDeg=null,metric='H',markers=new Map();
-let D=[],selD=null,mode='st';
+let D=[],selD=null,mode='st',damErrors=[];
 
 // station status = highest flood degree reached by the current level (or flow if no level thresholds)
 function status(s){
@@ -202,7 +202,7 @@ function open(s,pan=true){
 
 function legend(){
   if(mode==='dam'){
-    $('legend').innerHTML='<b>Zaplnění zásobního prostoru</b>'+[[95,'≥ 95 %'],[60,'60–95 %'],[30,'30–60 %'],[0,'< 30 %']].map(([f,l])=>`<div>${tank(f===0?10:f)}${l}</div>`).join('')+`<div><span class="ring-key"></span>Poloha přibližná (${visibleDams().filter(d=>d.approx).length})</div><div class="sub">${visibleDams().length} nádrží</div>`;
+    $('legend').innerHTML='<b>Zaplnění zásobního prostoru</b>'+[[95,'≥ 95 %'],[60,'60–95 %'],[30,'30–60 %'],[0,'< 30 %']].map(([f,l])=>`<div>${tank(f===0?10:f)}${l}</div>`).join('')+`<div><span class="ring-key"></span>Poloha přibližná (${visibleDams().filter(d=>d.approx).length})</div><div class="sub">${visibleDams().length} nádrží</div>`+damErrors.map(e=>`<div class="sub">⚠ ${esc(e.pov)} nedostupné${e.haveOlderData?' (starší data)':''}</div>`).join('');
     return;
   }
   const p=$('pov').value,rv=$('river').value,base=S.filter(s=>(!p||s.pov===p)&&(!rv||s.river===rv));
@@ -260,6 +260,7 @@ function openDam(d,pan=true){
     <div style="display:block">Q1: <b>${u(d.q1,'m³/s')}</b> · Q5: <b>${u(d.q5,'m³/s')}</b> · Q20: <b>${u(d.q20,'m³/s')}</b> · Q100: <b>${u(d.q100,'m³/s')}</b></div></div>
    ${refGauges(d)}
    ${(d.warnings||[]).map(w=>`<div class="note warn">⚠ ${esc(w)}</div>`).join('')}
+   ${d.stale?'<div class="note warn">Portál se nepodařilo načíst, zobrazuje se poslední známý stav.</div>':''}
    ${d.approx?'<div class="note warn">Poloha nádrže je přibližná (střed obce nebo blízký objekt), skutečná hráz může být o několik km jinde.</div>':''}
    ${d.note?`<div class="note">${esc(d.note)}</div>`:''}`;
   el.classList.add('open');
@@ -271,10 +272,10 @@ function openDam(d,pan=true){
 async function loadDams(){
   try{
     const r=await fetch('/api/reservoirs');if(!r.ok)throw new Error(r.status);
-    D=(await r.json()).reservoirs;
+    const body=await r.json();D=body.reservoirs;damErrors=body.errors||[];
     if(selD)selD=D.find(x=>x.key===selD.key)||null;
     if(mode==='dam'){renderDams();if(selD)openDam(selD,false);legend()}
-  }catch(e){D=[];if(mode==='dam')$('updated').textContent='Data nádrží se nepodařilo načíst: '+e.message}
+  }catch(e){if(mode==='dam')$('updated').textContent='Data nádrží se nepodařilo načíst: '+e.message}
 }
 function setMode(m){
   mode=m;document.body.classList.toggle('dams',m==='dam');

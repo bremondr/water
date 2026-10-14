@@ -1,14 +1,16 @@
-// Prototype backend: pulls CHMI open hydrology data, caches it, serves the UI.
+// Prototype backend: pulls ČHMÚ open hydrology data and the povodí reservoir portals, caches them
+// (memory + .cache/ on disk), and serves the UI.
 // ČHMÚ open data sends no CORS headers, so the browser can't call it directly.
 import http from 'node:http';
 import { readFile } from 'node:fs/promises';
-import { scrapeAll } from './dams.mjs';
+import { scrapeAll, finalizeReservoirs } from './dams.mjs';
+import { povodi } from './basins.mjs';
+import { createCache } from './cache.mjs';
 
 const BASE = 'https://opendata.chmi.cz/hydrology/now';
 const RECENT = 'https://opendata.chmi.cz/hydrology/recent/data';
 const PORT = process.env.PORT || 8080;
 const TTL = 10 * 60 * 1000;
-let cache = null, loading = null;
 
 async function getJson(url) {
   const r = await fetch(url);
@@ -16,22 +18,32 @@ async function getJson(url) {
   return r.json();
 }
 
-// meta3 has no "povodí" field (PROVOZOVATEL is the gauge operator, not the basin), so derive the
-// state-enterprise basin from the hydrological order number (HLGP4, e.g. 1-14-03-1020). Approximate.
-function povodi(hlgp) {
-  const [a, b, c] = (hlgp || '').split('-');
-  const k = `${a}-${b}`;
-  if (['1-01', '1-02', '1-03', '1-04', '1-05'].includes(k)) return 'Povodí Labe';
-  if (k === '1-14') return c === '01' ? 'Povodí Ohře' : 'Povodí Labe';      // 1-14-01 = Bílina
-  if (k === '1-12') return c === '03' ? 'Povodí Labe' : 'Povodí Vltavy';    // 1-12-03 = Labe below Vltava
-  if (['1-06', '1-07', '1-08', '1-09', '1-10', '1-11'].includes(k)) return 'Povodí Vltavy';
-  if (k === '1-13' || k === '1-15') return 'Povodí Ohře';
-  if (a === '2') return 'Povodí Odry';
-  if (a === '4' && b !== '02') return 'Povodí Moravy';
-  return 'Ostatní';
+// ---- River stations (ČHMÚ) ------------------------------------------------------------------
+// A station needs three files (today from "now", the two previous days from "recent"). The previous days
+// no longer change, so they are fetched once and kept in memory: a refresh then costs ~550 requests instead
+// of ~1,650. Misses (no file for that day) are remembered for 6 h so they are not retried every refresh.
+const past = new Map();                       // "YYYYMMDD_objID" -> { at, series } ; series = { H: [], Q: [] } | null
+const MISS_TTL = 6 * 3600 * 1000;
+
+const toSeries = d => {
+  const out = { H: [], Q: [] };
+  for (const ts of d.objList[0].tsList) {
+    const key = ts.tsConID === 'H' ? 'H' : ts.tsConID === 'Q' ? 'Q' : null;
+    if (key) out[key].push(...ts.tsData.filter(p => p.value != null).map(p => [Date.parse(p.dt) / 1000, p.value]));
+  }
+  return out;
+};
+
+async function pastDay(day, id) {
+  const key = `${day}_${id}`, hit = past.get(key);
+  if (hit && (hit.series || Date.now() - hit.at < MISS_TTL)) return hit.series;
+  let series = null;
+  try { series = toSeries(await getJson(`${RECENT}/${key}.json`)); } catch { /* no file for that day */ }
+  past.set(key, { at: Date.now(), series });
+  return series;
 }
 
-async function build() {
+async function buildStations() {
   const m3 = (await getJson(`${BASE}/metadata/meta3.json`)).data.data;
   const c3 = m3.header.split(',');
   const pov = new Map(m3.values.map(v => [v[c3.indexOf('objID')], povodi(v[c3.indexOf('HLGP4')])]));
@@ -41,6 +53,7 @@ async function build() {
   const stations = values.map(v => Object.fromEntries(cols.map((c, i) => [c, v[i]])));
   const day = n => new Date(Date.now() - n * 864e5).toISOString().slice(0, 10).replaceAll('-', '');
   const days = [day(2), day(1)];
+  for (const k of past.keys()) if (!days.includes(k.slice(0, 8))) past.delete(k);   // drop days that left the window
   const out = [];
   let i = 0;
   async function worker() {
@@ -52,90 +65,52 @@ async function build() {
         h: [s.SPA1H, s.SPA2H, s.SPA3H, s.SPA4H], q: [s.SPA1Q, s.SPA2Q, s.SPA3Q, s.SPA4Q],
         pov: pov.get(s.objID) || 'Ostatní', dryH: s.DRYH, dryQ: s.DRYQ, H: [], Q: [],
       };
-      // today's file ("now") plus the two previous days from "recent" => at least 48 h of 10-minute data
-      for (const url of [...days.map(d => `${RECENT}/${d}_${s.objID}.json`), `${BASE}/data/${s.objID}.json`]) {
-        try {
-          const d = await getJson(url);
-          for (const ts of d.objList[0].tsList) {
-            const key = ts.tsConID === 'H' ? 'H' : ts.tsConID === 'Q' ? 'Q' : null;
-            if (key) st[key].push(...ts.tsData.filter(p => p.value != null).map(p => [Date.parse(p.dt) / 1000, p.value]));
-          }
-        } catch (e) { /* station without data for that day */ }
-      }
+      // two previous days plus today => at least 48 h of 10-minute data
+      const parts = [];
+      for (const d of days) parts.push(await pastDay(d, s.objID));
+      try { parts.push(toSeries(await getJson(`${BASE}/data/${s.objID}.json`))); } catch { /* no data today */ }
+      for (const p of parts) if (p) { st.H.push(...p.H); st.Q.push(...p.Q); }
       if (st.H.length || st.Q.length) out.push(st);
     }
   }
   await Promise.all(Array.from({ length: 16 }, worker));
+  if (!out.length) throw new Error('no station data returned');
   out.sort((a, b) => a.name.localeCompare(b.name, 'cs'));
   return { updated: new Date().toISOString(), stations: out };
 }
 
-async function data() {
-  if (cache && Date.now() - cache.at < TTL) return cache.body;
-  loading ??= build().then(b => (cache = { at: Date.now(), body: JSON.stringify(b) }, b))
-                     .finally(() => (loading = null));
-  if (cache) return cache.body;           // serve stale while refreshing
-  return JSON.stringify(await loading);
-}
-
-// ---- Reservoirs (all five povodí) ----------------------------------------------------------
+// ---- Reservoirs (all five povodí) -----------------------------------------------------------
 // Scraping lives in dams.mjs; positions come from dam-coords.json (made once by geocode.mjs), since the
-// portals publish none. Dams without a position are left out.
+// portals publish none.
 const COORDS = JSON.parse(await readFile(new URL('./dam-coords.json', import.meta.url), 'utf8'));
 
-// ČHMÚ publishes no gauge between Orlík and Zbraslav (its "VD Orlík"/"VD Vrané" stations have no data),
-// so the nearest flow measurements below the whole cascade are Zbraslav (river km 65,2) and Praha - Chuchle
-// (km 60,1). The client looks these up in the station data it already has.
-const CASCADE_REF = ['0-203-1-169000', '0-203-1-200100'];
-
-async function buildReservoirs() {
-  const all = await scrapeAll();
-  const out = all
-    .filter(d => !/přepočítaná/i.test(d.name))                   // Povodí Moravy lists Dalešice twice
-    .map(d => ({
-      ...d, lat: COORDS[d.key]?.[0], lon: COORDS[d.key]?.[1],
-      approx: COORDS[d.key]?.[2] === 1,                              // position is a village/locality centre, not the dam
-      note: d.note === `VD ${d.name}` ? '' : d.note,                  // Odra repeats the name as a note
-      warnings: [],
-    }))
-    .filter(d => d.lat != null);
-  for (const d of out) {
-    // The Vltava cascade (Orlík, Kamýk, Slapy, Štěchovice) is published with outflow exactly 0,00 while
-    // inflow is 10-25 m3/s and the river below carries ~30-40 m3/s (ČHMÚ Praha-Chuchle, Zbraslav). It is a
-    // placeholder for "not reported", so hide it instead of showing a false zero.
-    if (d.outflow === 0 && (d.inflow ?? 0) >= 1) {
-      d.warnings.push(`Portál uvádí odtok 0,00 m³/s při přítoku ${String(d.inflow).replace('.', ',')} m³/s. Řeka pod nádrží přitom teče, takže jde o nenahlášenou hodnotu, ne o skutečnou nulu. Odtok je skrytý, orientační průtok pod kaskádou je níže.`);
-      d.outflow = null;
-      d.refGauges = CASCADE_REF;
-    }
-    if (d.inflow != null && d.inflow < 0)
-      d.warnings.push('Záporný přítok je dopočtený z bilance nádrže (změna objemu a odtok), není měřený.');
-  }
-  out.sort((a, b) => a.name.localeCompare(b.name, 'cs'));
-  return { updated: new Date().toISOString(), reservoirs: out };
+async function buildReservoirs(prev) {
+  const { dams, errors } = await scrapeAll();
+  if (!dams.length) throw new Error(`all portals failed: ${errors.map(e => `${e.key}: ${e.message}`).join('; ')}`);
+  // A portal that is down keeps its last known dams (flagged stale) instead of vanishing from the map.
+  const failed = new Set(errors.map(e => e.pov));
+  const kept = (prev?.reservoirs ?? []).filter(d => failed.has(d.pov)).map(d => ({ ...d, stale: true }));
+  for (const e of errors) console.error(`[reservoirs] ${e.pov} failed: ${e.message}`);
+  return {
+    updated: new Date().toISOString(),
+    reservoirs: [...finalizeReservoirs(dams, COORDS), ...kept],
+    errors: errors.map(e => ({ pov: e.pov, message: e.message, haveOlderData: kept.some(d => d.pov === e.pov) })),
+  };
 }
 
-let damCache = null, damLoading = null;
-async function reservoirs() {
-  if (damCache && Date.now() - damCache.at < TTL) return damCache.body;
-  damLoading ??= buildReservoirs().then(b => (damCache = { at: Date.now(), body: JSON.stringify(b) }))
-                                  .finally(() => (damLoading = null));
-  if (damCache) return damCache.body;
-  await damLoading;
-  return damCache.body;
-}
+const stations = createCache({ name: 'stations', ttl: TTL, build: buildStations });
+const reservoirs = createCache({ name: 'reservoirs', ttl: TTL, build: buildReservoirs });
+
+const json = { 'content-type': 'application/json', 'cache-control': 'max-age=60' };
 
 http.createServer(async (req, res) => {
   try {
-    if (req.url.startsWith('/api/reservoirs')) {
-      res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'max-age=60' });
-      return res.end(await reservoirs());
-    }
-    if (req.url.startsWith('/api/stations')) {
-      res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'max-age=60' });
-      return res.end(await data());
-    }
+    if (req.url.startsWith('/api/reservoirs')) { res.writeHead(200, json); return res.end(await reservoirs.get()); }
+    if (req.url.startsWith('/api/stations')) { res.writeHead(200, json); return res.end(await stations.get()); }
     res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
     res.end(await readFile(new URL('./index.html', import.meta.url)));
   } catch (e) { res.writeHead(502); res.end(String(e)); }
-}).listen(PORT, () => console.log(`http://localhost:${PORT}`));
+}).listen(PORT, () => {
+  console.log(`http://localhost:${PORT}`);
+  stations.start(); reservoirs.start();
+});

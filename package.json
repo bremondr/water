@@ -10,6 +10,7 @@
     "test": "node --test \"test/*.test.mjs\"",
     "fixtures": "node scripts/save-fixtures.mjs",
     "geocode": "node geocode.mjs",
-    "zone-offset": "node scripts/zone-offset.mjs"
+    "zone-offset": "node scripts/zone-offset.mjs",
+    "fit-stage": "node scripts/fit-stage.mjs"
   }
 }

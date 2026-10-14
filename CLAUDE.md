@@ -29,6 +29,8 @@ Prototype web app. Node 20+ (ESM, no dependencies, no build step). UI language i
   layer in `<id>.zones.bin`) and are drawn as outlines. **The WFS coordinates lack the S-JTSK to WGS84 datum shift** (outlines were ~70 m
   west and ~80 m south of the terrain): `zones.mjs` corrects it with `+towgs84=589,76,480`, and `npm run zone-offset <stationId>` checks the
   alignment against the terrain (residual about 10 m). Re-fetch zones after touching that code.
+  `npm run fit-stage` prints, per station and zone, the gauge stage whose flat-plane flood best matches the zone next to the stage
+  the rating curve gives for the same N-year flow. Result on 2026-10-15: Q100 agrees within ~0.1-0.8 m at all four stations (IoU 0.70-0.83).
   Zones are drawn as outlines, with precision/recall/IoU against the modelled extent. The page can tilt the
   water surface (slope in cm/km along the channel direction derived from the flat river in the DEM, optionally estimated from
   neighbouring gauges) and can search the stage that best matches a zone. Known limits are listed on the page; do not present it as

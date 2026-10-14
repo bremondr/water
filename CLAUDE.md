@@ -25,7 +25,11 @@ Prototype web app. Node 20+ (ESM, no dependencies, no build step). UI language i
   plane = gauge zero (`WGS_ELE` in the ČHMÚ metadata) + stage, flooded = below the plane and connected to the river.
   Open `/experiments/flood/` after `node scripts/fetch-dem.mjs <stationId>` (data is gitignored; four stations were fetched
   during development). The DEM shows rivers at their level during the LiDAR survey, so stages below that stay in the channel.
-  Known limits are listed on the page; do not present it as a forecast or a flood map.
+  Official flood zones (Q5/Q20/Q100/Q500/active zone) come from the VÚV WFS (`zones.mjs`, rasterised onto the same grid, bit per
+  layer in `<id>.zones.bin`) and are drawn as outlines, with precision/recall/IoU against the modelled extent. The page can tilt the
+  water surface (slope in cm/km along the channel direction derived from the flat river in the DEM, optionally estimated from
+  neighbouring gauges) and can search the stage that best matches a zone. Known limits are listed on the page; do not present it as
+  a forecast or a flood map.
 - `basins.mjs`: station → povodí mapping from the hydrological order number (approximate).
 - `cache.mjs`: stale-while-revalidate cache persisted to `.cache/` (gitignored). A restart serves the last good data
   instantly. A failed refresh keeps the previous value.

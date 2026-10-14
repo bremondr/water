@@ -111,3 +111,71 @@ test('readTiledFloatTiff reassembles tiles, including partial edge tiles', () =>
 test('readTiledFloatTiff rejects what it cannot read', () => {
   assert.throws(() => readTiledFloatTiff(Buffer.from('not a tiff at all......')), /TIFF/);
 });
+
+// ---- tilted water surface, channel direction, zone comparison, rasteriser ----------------------------------------------
+import { levelAt, channelAxis, tiltFromSlope, orient, compareWithZone } from '../experiments/flood/flood.mjs';
+import { rasterizeFeatures } from '../zones.mjs';
+
+test('a tilted water surface floods more upstream-high ground and less downstream', () => {
+  // flat floodplain at 101.0 m, row of 11 cells, river seed at x=5; surface 101.5 at the gauge
+  const g = grid([Array(11).fill(101.0)]);
+  g.z[5] = 100 * 10;                                             // river cell
+  const flat = floodFill(g.z, g.width, g.height, 5, 1015);
+  assert.equal(flat.count, 11);
+  // surface falls 0.3 m per cell towards +x: cells right of the gauge drop below the ground (101.0)
+  const tilt = { gx: -3, gy: 0, cx: 5, cy: 0 };                 // dm per pixel
+  const tilted = floodFill(g.z, g.width, g.height, 5, 1015, { tilt });
+  assert.equal(tilted.mask[idx(g, 6, 0)], 1);                    // 101.2 m: still wet
+  assert.equal(tilted.mask[idx(g, 7, 0)], 0);                    // 100.9 m: dry
+  assert.equal(tilted.mask[idx(g, 0, 0)], 1);                    // upstream side gets deeper water
+  assert.equal(levelAt(1015, tilt, 5, 0, 7, 0), 1009);
+});
+
+test('tiltFromSlope converts cm/km along an axis into dm per pixel', () => {
+  const t = tiltFromSlope(20, { ux: 1, uy: 0 }, 2.5);            // 20 cm/km, 2.5 m pixels -> 0.005 dm per pixel
+  assert.ok(Math.abs(t.gx - 0.005) < 1e-12 && t.gy === 0);
+  const d = tiltFromSlope(20, { ux: 0, uy: -1 }, 2.5);
+  assert.ok(Math.abs(d.gy + 0.005) < 1e-12);
+});
+
+test('channelAxis finds the direction of a flat channel and orient() flips it', () => {
+  // diagonal flat channel (100.0 m) across a 120x120 grid of 105 m ground
+  const w = 120, rows = Array.from({ length: w }, (_, y) => Array.from({ length: w }, (_, x) => (Math.abs(x - y) <= 2 ? 100 : 105)));
+  const g = grid(rows);
+  const axis = channelAxis(g.z, g.width, g.height, idx(g, 60, 60), 80);
+  assert.ok(axis, 'channel should be found');
+  assert.ok(Math.abs(Math.abs(axis.ux) - Math.SQRT1_2) < 0.05 && Math.abs(Math.abs(axis.uy) - Math.SQRT1_2) < 0.05, `diagonal expected, got ${axis.ux},${axis.uy}`);
+  const up = orient(axis, 60, 60, 100, 100);                      // point towards the lower right
+  assert.ok(up.ux > 0 && up.uy > 0);
+  assert.equal(channelAxis(grid([[100, 100, 100]]).z, 3, 1, 0, 5), null, 'too small to tell');
+});
+
+test('compareWithZone gives precision, recall and IoU, optionally inside a circle', () => {
+  const flood = Uint8Array.from([1, 1, 1, 0, 0, 0, 0, 0, 0]);    // 3x3, top row flooded
+  const zones = Uint8Array.from([4, 4, 0, 4, 4, 0, 0, 0, 0]);    // Q100 bit (4) on the top-left 2x2
+  const c = compareWithZone(flood, zones, 4);
+  assert.deepEqual([c.floodCells, c.zoneCells, c.both], [3, 4, 2]);
+  assert.ok(Math.abs(c.precision - 2 / 3) < 1e-9 && Math.abs(c.recall - 0.5) < 1e-9 && Math.abs(c.iou - 2 / 5) < 1e-9);
+  assert.equal(compareWithZone(flood, zones, 8).recall, null, 'a bit that is never set has no zone cells');
+  const small = compareWithZone(flood, zones, 4, { cx: 0, cy: 0, radius: 0.5 });
+  assert.deepEqual([small.floodCells, small.zoneCells, small.both], [1, 1, 1]);
+});
+
+test('rasterizeFeatures: even-odd fill keeps holes empty, ORs bits, and accepts lat,lon coordinate order', () => {
+  const out = new Uint8Array(10 * 10);
+  const toPixel = (lon, lat) => [lon, lat];                       // identity: coordinates are pixels
+  const square = (a, b) => [[a, a], [b, a], [b, b], [a, b], [a, a]];
+  // outer 1..9 with a hole 4..6, written as [lat, lon] pairs that the code must recognise (values here are not in lat range, so lon,lat is used)
+  rasterizeFeatures([{ geometry: { type: 'Polygon', coordinates: [square(1, 9), square(4, 6)] } }], toPixel, 10, 10, 4, out);
+  assert.equal(out[2 * 10 + 2], 4);                               // inside the ring
+  assert.equal(out[5 * 10 + 5], 0);                               // inside the hole
+  assert.equal(out[0 * 10 + 0], 0);                               // outside
+  rasterizeFeatures([{ geometry: { type: 'MultiPolygon', coordinates: [[square(0, 3)]] } }], toPixel, 10, 10, 1, out);
+  assert.equal(out[0], 1);                                        // the new bit alone where the first polygon does not reach
+  assert.equal(out[2 * 10 + 2], 4 | 1);                           // overlapping layers keep both bits
+
+  // lat,lon order as the VÚV WFS returns it: [50.3, 14.4] must be read as lon 14.4, lat 50.3
+  const seen = [];
+  rasterizeFeatures([{ geometry: { type: 'Polygon', coordinates: [[[50.1, 14.1], [50.1, 14.9], [50.9, 14.9], [50.9, 14.1]]] } }], (lon, lat) => { seen.push([lon, lat]); return [0, 0]; }, 2, 2, 1, new Uint8Array(4));
+  assert.deepEqual(seen[0], [14.1, 50.1]);
+});

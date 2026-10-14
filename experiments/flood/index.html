@@ -11,13 +11,13 @@
 *{box-sizing:border-box}
 html,body{height:100%;margin:0}
 body{font:15px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--text)}
-#app{display:grid;grid-template-columns:360px minmax(0,1fr);height:100%}
+#app{display:grid;grid-template-columns:380px minmax(0,1fr);height:100%}
 aside{background:var(--panel);border-right:1px solid var(--line);overflow:auto;padding:14px 16px 24px}
 h1{font-size:18px;margin:0 0 4px}
 h2{font-size:14px;margin:18px 0 6px}
 .sub{color:var(--muted);font-size:13px}
 label{display:block;font-size:13px;color:var(--muted);margin:10px 0 4px}
-select,input[type=number]{width:100%;padding:8px 10px;border:1px solid var(--field);border-radius:8px;background:var(--bg);color:var(--text);font:inherit}
+select{width:100%;padding:8px 10px;border:1px solid var(--field);border-radius:8px;background:var(--bg);color:var(--text);font:inherit}
 input[type=range]{width:100%;accent-color:var(--accent)}
 .row{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
 button{border:1px solid var(--field);background:var(--bg);color:var(--text);border-radius:99px;padding:5px 11px;font:inherit;font-size:13px;cursor:pointer}
@@ -33,6 +33,8 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid 
 .ramp{height:12px;border-radius:6px;margin-top:6px;background:linear-gradient(90deg,#9be7ff,#3fa9f5 16%,#1d5fd1 50%,#1a2a8c)}
 .ramp-l{display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
 .check{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--text);margin:4px 0}
+.sw{display:inline-block;width:22px;height:0;border-top:3px solid;flex:none}
+.cmp{font-size:13px;margin:4px 0;line-height:1.35}
 #map{height:100%}
 @media(max-width:800px){#app{grid-template-columns:1fr;grid-template-rows:auto 55vh}aside{border-right:0;border-bottom:1px solid var(--line)}}
 </style>
@@ -41,7 +43,7 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid 
 <div id="app">
  <aside>
   <h1>Kde by byla voda?</h1>
-  <div class="sub">Experiment: rovná hladina o dané výšce přelitá přes terén (DMR 5G) od vybrané stanice. Není to předpověď ani povodňová mapa.</div>
+  <div class="sub">Experiment: hladina o dané výšce přelitá přes terén (DMR 5G) od vybrané stanice. Není to předpověď ani povodňová mapa.</div>
 
   <label for="station">Stanice (vodoměrná)</label>
   <select id="station"></select>
@@ -51,6 +53,13 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid 
   <div class="sub" id="level">–</div>
   <input id="stage" type="range" aria-label="Hladina na stanici v centimetrech" aria-describedby="level">
   <div class="row" id="quick"></div>
+
+  <h2>Spád hladiny podél toku</h2>
+  <div class="sub">Skutečná hladina se po proudu snižuje. Nastavte, o kolik cm na km je hladina výš proti proudu. 0 = vodorovná hladina.</div>
+  <label for="slope">Spád: <b id="slopeLabel">0 cm/km</b></label>
+  <input id="slope" type="range" min="0" max="60" step="1" value="0">
+  <div class="row"><button id="estimate" type="button">Odhadnout z okolních stanic</button></div>
+  <div id="slopeNote"></div>
 
   <h2>Výsledek</h2>
   <div class="stats" aria-live="polite">
@@ -63,25 +72,29 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid 
   <div class="ramp" aria-hidden="true"></div>
   <div class="ramp-l"><span>0 m</span><span>1 m</span><span>3 m</span><span>6 m a víc</span></div>
 
+  <h2>Oficiální záplavová území (VÚV)</h2>
+  <div class="sub">Okraje zón; statické návrhové mapy, ne aktuální stav.</div>
+  <label class="check"><input type="checkbox" data-zone="q5"><span class="sw" style="border-color:#4a148c"></span> Q5 (pětiletá voda)</label>
+  <label class="check"><input type="checkbox" data-zone="q20"><span class="sw" style="border-color:#ef6c00"></span> Q20</label>
+  <label class="check"><input type="checkbox" data-zone="q100"><span class="sw" style="border-color:#b71c1c"></span> Q100</label>
+  <label class="check"><input type="checkbox" data-zone="q500"><span class="sw" style="border-color:#6d4c41"></span> Q500</label>
+  <label class="check"><input type="checkbox" data-zone="aktivnizony"><span class="sw" style="border-color:#000000"></span> Aktivní zóna</label>
+  <div id="zoneNote"></div>
+  <div id="compare" aria-live="polite"></div>
+  <div class="row"><button id="fit" type="button" disabled>Najít hladinu, která nejlépe odpovídá první vybrané zóně</button></div>
+  <div id="fitNote" aria-live="polite"></div>
+
   <h2>Nastavení</h2>
   <label for="radius">Omezit na vzdálenost od stanice: <b id="radiusLabel"></b></label>
   <input id="radius" type="range" min="0.3" max="3.5" step="0.1" value="3.5">
   <label for="opacity">Průhlednost vrstvy</label>
   <input id="opacity" type="range" min="0.2" max="1" step="0.05" value="0.8">
 
-  <h2>Porovnání s oficiálními záplavovými územími</h2>
-  <div class="sub">VÚV TGM (WMS). Statické návrhové mapy, ne aktuální stav.</div>
-  <label class="check"><input type="checkbox" data-wms="isvs_zapluz_5"> Záplavové území Q5</label>
-  <label class="check"><input type="checkbox" data-wms="isvs_zapluz_20"> Q20</label>
-  <label class="check"><input type="checkbox" data-wms="isvs_zapluz_100"> Q100</label>
-  <label class="check"><input type="checkbox" data-wms="isvs_zapluz_az"> Aktivní zóna</label>
-
   <div class="note">
-   <b>Jak to funguje.</b> Hladina je vodorovná rovina ve výšce nulový bod vodočtu + stav. Zaplaví se buňky terénu pod ní, které jsou
-   spojené s řekou. Pole za hrází se proto nezaplaví, dokud voda hrázi nepřelije.<br><br>
-   <b>Co to ignoruje.</b> Spád hladiny podél toku (rovina je správná jen v okolí stanice, proto omezení vzdálenosti), rychlost proudu,
-   propustky a mosty, tenké hráze, které mřížka 2,5 m nezachytí, a dobu trvání povodně. Model terénu zachycuje řeku na hladině
-   z doby měření, takže nižší stavy zůstávají v korytě.
+   <b>Jak to funguje.</b> Hladina je rovina ve výšce nulový bod vodočtu + stav, případně nakloněná podle spádu. Zaplaví se buňky
+   terénu pod ní, které jsou spojené s řekou. Pole za hrází se proto nezaplaví, dokud voda hrázi nepřelije.<br><br>
+   <b>Co to ignoruje.</b> Zakřivení hladiny, rychlost proudu, propustky a mosty, tenké hráze, které mřížka 2,5 m nezachytí, jezy,
+   které hladinu stupňují, a dobu trvání povodně. Model terénu zachycuje řeku na hladině z doby měření, takže nižší stavy zůstávají v korytě.
   </div>
   <div class="sub" style="margin-top:10px">Data: ČÚZK, DMR 5G · ČHMÚ · © VÚV TGM, HEIS VÚV · © OpenStreetMap</div>
  </aside>
@@ -90,12 +103,13 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid 
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script type="module">
-import { floodForStage, lowestNear, pixelOf } from './flood.mjs';
+import { floodForStage, lowestNear, pixelOf, channelAxis, orient, tiltFromSlope, compareWithZone } from './flood.mjs';
 
 const $ = id => document.getElementById(id);
 const fmt = (v, d = 0) => v == null ? '–' : v.toLocaleString('cs-CZ', { maximumFractionDigits: d });
 const map = L.map('map').setView([50.3, 14.4], 11);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18, attribution: '© OpenStreetMap' }).addTo(map);
+const BLANK = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
 
 // depth -> colour (light cyan for shallow to dark blue for deep); LUT indexed by depth in decimetres, capped at 6 m
 const stops = [[0, [155, 231, 255, 150]], [10, [63, 169, 245, 190]], [30, [29, 95, 209, 215]], [60, [26, 42, 140, 235]]];
@@ -105,49 +119,93 @@ for (let d = 0; d <= 60; d++) {
   const [d0, c0] = stops[k], [d1, c1] = stops[k + 1], f = Math.min(1, Math.max(0, (d - d0) / (d1 - d0)));
   for (let c = 0; c < 4; c++) lut[d * 4 + c] = c0[c] + (c1[c] - c0[c]) * f;
 }
+const ZONES = { q5: [1, '#4a148c', 'Q5'], q20: [2, '#ef6c00', 'Q20'], q100: [4, '#b71c1c', 'Q100'], q500: [8, '#6d4c41', 'Q500'], aktivnizony: [16, '#000000', 'aktivní zóna'] };
 
-const q = new URLSearchParams(location.search), wanted = { station: q.get('station'), stage: q.has('stage') ? +q.get('stage') : NaN, wms: (q.get('wms') || '').split(',').filter(Boolean) };
-let ds = null, overlay = null, limitCircle = null, stationMarker = null, urlToRevoke = null, pending = false;
-const canvas = document.createElement('canvas');
-const wmsLayers = {};
-document.querySelectorAll('[data-wms]').forEach(box => box.addEventListener('change', () => {
-  const name = box.dataset.wms;
-  if (box.checked) { wmsLayers[name] ??= L.tileLayer.wms('https://heis.vuv.cz/data/webmap/wms.dll', { layers: name, format: 'image/png', transparent: true, version: '1.3.0', opacity: .6, attribution: '© VÚV TGM, HEIS VÚV' }); wmsLayers[name].addTo(map); }
-  else wmsLayers[name]?.remove();
-}));
+const q = new URLSearchParams(location.search);
+const wanted = { station: q.get('station'), stage: q.has('stage') ? +q.get('stage') : NaN, slope: q.has('slope') ? +q.get('slope') : NaN, zones: (q.get('zones') || '').split(',').filter(Boolean) };
+let ds = null, overlay = null, zoneOverlay = null, limitCircle = null, stationMarker = null, urlToRevoke = null, zoneUrl = null, pending = false, live = null;
+const canvas = document.createElement('canvas'), zoneCanvas = document.createElement('canvas');
+
+async function liveData() {
+  if (live) return live;
+  live = { stations: [], weirs: [] };
+  try { live.stations = (await (await fetch('/api/stations')).json()).stations; } catch { /* the experiment also works without the live API */ }
+  try { live.weirs = (await (await fetch('/api/reservoirs')).json()).weirs ?? []; } catch { /* idem */ }
+  return live;
+}
 
 async function loadStation(id) {
   $('message').innerHTML = '<div class="note">Načítám terén…</div>';
   const meta = await (await fetch(`data/${id}.json`)).json();
-  const buf = await (await fetch(`data/${id}.bin`)).arrayBuffer();
-  const z = new Uint16Array(buf);
+  const [buf, zbuf] = await Promise.all([
+    fetch(`data/${id}.bin`).then(r => r.arrayBuffer()),
+    meta.zones ? fetch(`data/${meta.zones.file}`).then(r => r.arrayBuffer()).catch(() => null) : null,
+  ]);
+  const z = new Uint16Array(buf), zones = zbuf ? new Uint8Array(zbuf) : null;
   const { x: cx, y: cy } = pixelOf(meta, meta.station.lon, meta.station.lat);
   const seed = lowestNear(z, meta.width, meta.height, cx, cy, 40, meta.noData);
   const scanCm = seed >= 0 ? Math.round((z[seed] / 10 - meta.station.zero) * 100) : null;
-  ds = { meta, z, cx, cy, seed, scanCm, width: meta.width, height: meta.height, current: null };
-  canvas.width = meta.width; canvas.height = meta.height;
 
-  const st = meta.station, spa = st.spaH;
-  const slider = $('stage');
+  // direction of the river at the gauge (from the flat channel in the terrain), pointing upstream
+  let axis = channelAxis(z, meta.width, meta.height, seed, Math.round(1500 / meta.groundPixel), meta.noData);
+  const up = meta.neighbours?.up?.[0], down = meta.neighbours?.down?.[0];
+  if (axis && up) { const p = pixelOf(meta, up.lon, up.lat); axis = orient(axis, cx, cy, p.x, p.y); }
+  else if (axis && down) { const p = pixelOf(meta, down.lon, down.lat); axis = orient(axis, cx, cy, 2 * cx - p.x, 2 * cy - p.y); }
+
+  ds = { meta, z, zones, cx, cy, seed, scanCm, axis, width: meta.width, height: meta.height, current: null };
+  canvas.width = zoneCanvas.width = meta.width; canvas.height = zoneCanvas.height = meta.height;
+
+  const st = meta.station, spa = st.spaH, slider = $('stage');
   slider.min = Math.floor(((scanCm ?? 0) - 20) / 5) * 5; slider.max = Math.max(...spa.filter(Boolean), (scanCm ?? 0) + 300) + 200; slider.step = 5;
   slider.value = Number.isFinite(wanted.stage) ? wanted.stage : (spa[2] ?? spa[1] ?? spa[0] ?? scanCm + 100);
+  $('slope').value = Number.isFinite(wanted.slope) ? wanted.slope : 0;
+  $('slopeNote').innerHTML = axis ? '' : '<div class="note">Směr toku se nepodařilo určit z terénu, spád se proto nepoužije.</div>';
+  $('estimate').disabled = !axis;
 
   const b = meta.bounds, bounds = [[b.south, b.west], [b.north, b.east]];
-  overlay?.remove(); overlay = L.imageOverlay('data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==', bounds, { opacity: +$('opacity').value, interactive: false }).addTo(map);
+  overlay?.remove(); overlay = L.imageOverlay(BLANK, bounds, { opacity: +$('opacity').value, interactive: false, zIndex: 5 }).addTo(map);
+  zoneOverlay?.remove(); zoneOverlay = L.imageOverlay(BLANK, bounds, { interactive: false, zIndex: 6 }).addTo(map);
   stationMarker?.remove(); stationMarker = L.circleMarker([st.lat, st.lon], { radius: 7, color: '#fff', weight: 2, fillColor: '#c2185b', fillOpacity: 1 }).addTo(map).bindTooltip(`${st.name}, vodočet`);
   map.fitBounds(bounds);
+
+  document.querySelectorAll('[data-zone]').forEach(box => { box.disabled = !zones; box.checked = wanted.zones.includes(box.dataset.zone) && !!zones; });
+  $('zoneNote').innerHTML = zones ? '' : '<div class="note warn">Pro tuto stanici nejsou stažená záplavová území. Spusťte znovu node scripts/fetch-dem.mjs.</div>';
+  drawZones();
 
   const quick = $('quick'); quick.innerHTML = '';
   const add = (label, cm) => { const bt = document.createElement('button'); bt.textContent = label; bt.disabled = cm == null; bt.onclick = () => { slider.value = cm; update(); }; quick.append(bt); return bt; };
   const cur = add('Aktuální', null);
   add('1. SPA', spa[0]); add('2. SPA', spa[1]); add('3. SPA', spa[2]); add('Extrém', spa[3]);
-  try {
-    const stations = (await (await fetch('/api/stations')).json()).stations;
-    const s = stations.find(x => x.id === id), h = s?.H.at(-1)?.[1];
-    if (h != null) { ds.current = h; cur.textContent = `Aktuální (${h} cm)`; cur.disabled = false; cur.onclick = () => { slider.value = h; update(); }; }
-  } catch { /* experiment also works without the live API */ }
+  const lv = await liveData(), s = lv.stations.find(x => x.id === id), h = s?.H.at(-1)?.[1];
+  if (h != null) { ds.current = h; cur.textContent = `Aktuální (${h} cm)`; cur.disabled = false; cur.onclick = () => { slider.value = h; update(); }; }
   $('message').innerHTML = '';
   update();
+}
+
+// outline of every checked official zone (a zone cell with a non-zone neighbour within 2 px), one colour per zone
+function drawZones() {
+  if (!ds) return;
+  const { zones, width, height } = ds, ctx = zoneCanvas.getContext('2d');
+  const checked = [...document.querySelectorAll('[data-zone]:checked')].map(b => ZONES[b.dataset.zone]);
+  const img = ctx.createImageData(width, height), px = img.data;
+  if (zones) for (const [bit, hex] of checked) {
+    const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), bl = parseInt(hex.slice(5, 7), 16);
+    for (let y = 2; y < height - 2; y++) for (let x = 2; x < width - 2; x++) {
+      const i = y * width + x;
+      if (!(zones[i] & bit)) continue;
+      if ((zones[i - 2] & bit) && (zones[i + 2] & bit) && (zones[i - 2 * width] & bit) && (zones[i + 2 * width] & bit)) continue;
+      const o = i * 4; px[o] = r; px[o + 1] = g; px[o + 2] = bl; px[o + 3] = 255;
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+  zoneCanvas.toBlob(blob => { const url = URL.createObjectURL(blob); zoneOverlay.setUrl(url); if (zoneUrl) URL.revokeObjectURL(zoneUrl); zoneUrl = url; });
+  $('fit').disabled = !(zones && checked.length);
+  update();
+}
+
+function currentTilt() {
+  const slope = +$('slope').value;
+  return slope && ds.axis ? tiltFromSlope(slope, ds.axis, ds.meta.groundPixel) : null;
 }
 
 function update() {
@@ -155,22 +213,25 @@ function update() {
   pending = true;
   requestAnimationFrame(() => {
     pending = false;
-    const { meta, z, cx, cy, width, height, scanCm } = ds, st = meta.station;
-    const stage = +$('stage').value, radiusKm = +$('radius').value;
+    const { meta, z, zones, cx, cy, width, height, scanCm } = ds, st = meta.station;
+    const stage = +$('stage').value, radiusKm = +$('radius').value, slope = +$('slope').value;
     $('radiusLabel').textContent = `${fmt(radiusKm, 1)} km`;
+    $('slopeLabel').textContent = `${fmt(slope)} cm/km`;
     const t0 = performance.now();
-    const limitPx = radiusKm * 1000 / meta.groundPixel;
-    const r = floodForStage({ z, width, height, cx, cy, zeroM: st.zero, stageCm: stage, seedRadius: 40, limitRadius: radiusKm >= 3.5 ? null : limitPx, noData: meta.noData });
+    const limitPx = radiusKm * 1000 / meta.groundPixel, tilt = currentTilt();
+    const r = floodForStage({ z, width, height, cx, cy, zeroM: st.zero, stageCm: stage, seedRadius: 40, limitRadius: radiusKm >= 3.5 ? null : limitPx, tilt, noData: meta.noData });
     const ctx = canvas.getContext('2d'), img = ctx.createImageData(width, height), px = img.data, level = r.levelDm;
     for (let i = 0; i < r.mask.length; i++) if (r.mask[i]) {
-      const d = Math.min(60, Math.max(0, level - z[i])) * 4, o = i * 4;
+      const x = i % width, y = (i - x) / width;
+      const lv = tilt ? level + tilt.gx * (x - cx) + tilt.gy * (y - cy) : level;
+      const d = Math.min(60, Math.max(0, Math.round(lv - z[i]))) * 4, o = i * 4;
       px[o] = lut[d]; px[o + 1] = lut[d + 1]; px[o + 2] = lut[d + 2]; px[o + 3] = lut[d + 3];
     }
     ctx.putImageData(img, 0, 0);
     canvas.toBlob(blob => { const url = URL.createObjectURL(blob); overlay.setUrl(url); if (urlToRevoke) URL.revokeObjectURL(urlToRevoke); urlToRevoke = url; });
     const ms = performance.now() - t0;
     $('stageCm').textContent = stage;
-    $('level').textContent = `${fmt(st.zero + stage / 100, 2)} m n. m. (nulový bod vodočtu ${fmt(st.zero, 2)} m n. m.)`;
+    $('level').textContent = `${fmt(st.zero + stage / 100, 2)} m n. m. na stanici (nulový bod vodočtu ${fmt(st.zero, 2)} m n. m.)`;
     $('area').textContent = r.count ? `${fmt(r.count * meta.groundPixel ** 2 / 1e6, 2)} km²` : '0';
     $('depth').textContent = r.count ? `${fmt(r.maxDepthDm / 10, 1)} m` : '–';
     $('scan').textContent = scanCm == null ? '–' : `${fmt(scanCm)} cm`;
@@ -179,18 +240,72 @@ function update() {
       ? `<div class="note">Při této hladině je voda v korytě: model terénu zachycuje řeku na ${fmt(scanCm)} cm, nižší stavy proto nic nezaplaví.</div>` : '';
     limitCircle?.remove(); limitCircle = null;
     if (radiusKm < 3.5) limitCircle = L.circle([st.lat, st.lon], { radius: radiusKm * 1000, color: '#c2185b', weight: 2, dashArray: '6 6', fill: false, interactive: false }).addTo(map);
+
+    // agreement with the checked official zones, inside the same circle when the distance limit is on
+    const region = radiusKm >= 3.5 ? null : { cx, cy, radius: limitPx };
+    const lines = [...document.querySelectorAll('[data-zone]:checked')].map(b => {
+      const [bit, , name] = ZONES[b.dataset.zone], c = compareWithZone(r.mask, zones, bit, region);
+      if (!c.zoneCells) return `<div class="cmp"><b>${name}:</b> v tomto okně není žádná zóna.</div>`;
+      return `<div class="cmp"><b>${name}:</b> ${c.floodCells ? fmt(c.precision * 100) : 0} % zaplavené plochy leží v zóně · modelem je pokryto ${fmt(c.recall * 100)} % zóny · shoda (IoU) ${fmt(c.iou, 2)}</div>`;
+    });
+    $('compare').innerHTML = lines.length ? lines.join('') + '<div class="sub">Pokrytí zóny je dolní odhad: zóny dalších toků v okně (přítoky, Vltava) tento model z jedné stanice nikdy nezaplaví.</div>' : '';
   });
 }
 
+// calibration: which stage on the gauge makes the modelled flood agree best (highest IoU) with the first checked official zone?
+async function fitStage() {
+  const box = document.querySelector('[data-zone]:checked');
+  if (!ds || !box) return;
+  const { meta, z, zones, cx, cy, width, height } = ds, st = meta.station, [bit, , name] = ZONES[box.dataset.zone];
+  const radiusKm = +$('radius').value, limitPx = radiusKm * 1000 / meta.groundPixel, region = radiusKm >= 3.5 ? null : { cx, cy, radius: limitPx }, tilt = currentTilt();
+  const from = Math.max(+$('stage').min, ds.scanCm ?? 0), to = +$('stage').max;
+  let best = null;
+  $('fit').disabled = true;
+  for (let cm = from; cm <= to; cm += 10) {
+    $('fitNote').innerHTML = `<div class="sub">Hledám… ${cm} cm (${fmt((cm - from) / (to - from) * 100)} %)</div>`;
+    await new Promise(res => setTimeout(res, 0));
+    const f = floodForStage({ z, width, height, cx, cy, zeroM: st.zero, stageCm: cm, limitRadius: radiusKm >= 3.5 ? null : limitPx, tilt, noData: meta.noData });
+    const c = compareWithZone(f.mask, zones, bit, region);
+    if (c.iou != null && (!best || c.iou > best.iou)) best = { cm, iou: c.iou, precision: c.precision, recall: c.recall };
+  }
+  $('fit').disabled = false;
+  if (!best) { $('fitNote').innerHTML = '<div class="note">V tomto okně se nepodařilo najít shodu.</div>'; return; }
+  $('stage').value = best.cm; update();
+  const spa = st.spaH.map((v, i) => v == null ? null : `${i + 1}. SPA ${v} cm`).filter(Boolean).join(', ');
+  $('fitNote').innerHTML = `<div class="note">Nejlépe odpovídá hladina <b>${best.cm} cm</b> (${fmt(st.zero + best.cm / 100, 2)} m n. m.), shoda (IoU) ${fmt(best.iou, 2)}. Pro srovnání stupně povodňové aktivity na této stanici: ${spa || 'neuvedeny'}. Hledáno po 10 cm, se současným spádem a omezením vzdálenosti.</div>`;
+}
+
+// slope estimate from the neighbouring gauges' current levels: (level upstream - level downstream) / river km between them
+async function estimateSlope() {
+  const { meta } = ds, st = meta.station, lv = await liveData();
+  const pick = list => (list ?? []).map(n => { const s = lv.stations.find(x => x.id === n.id), h = s?.H.at(-1)?.[1]; return h == null ? null : { ...n, level: n.zero + h / 100 }; }).find(Boolean);
+  const hNow = ds.current;
+  if (hNow == null) { $('slopeNote').innerHTML = '<div class="note warn">Chybí aktuální hladina této stanice (API neběží?).</div>'; return; }
+  const here = { rkm: st.rkm, level: st.zero + hNow / 100, name: st.name };
+  const upN = pick(meta.neighbours?.up), downN = pick(meta.neighbours?.down);
+  const a = upN ?? here, b = downN ?? here;
+  if (a === b || a.rkm === b.rkm) { $('slopeNote').innerHTML = '<div class="note warn">Nenašel jsem sousední stanici s aktuálními daty.</div>'; return; }
+  const slope = (a.level - b.level) / (a.rkm - b.rkm) * 100;                 // cm per km
+  const lo = Math.min(a.rkm, b.rkm), hi = Math.max(a.rkm, b.rkm);
+  const weirs = lv.weirs.filter(w => w.rkm != null && w.rkm > lo && w.rkm < hi);
+  const value = Math.round(Math.max(0, Math.min(60, slope)));
+  $('slope').value = value; update();
+  const wtxt = weirs.length ? `<br><b>Mezi stanicemi leží ${weirs.length} jezů/zdymadel</b> (${weirs.slice(0, 6).map(w => w.name.replace(/^Zdymadlo |^Jez /, '')).join(', ')}${weirs.length > 6 ? ', …' : ''}). Jezy hladinu stupňují, takže průměrný spád tu hladinu přímo u stanice nepopisuje. Berte jen jako orientační.` : '';
+  $('slopeNote').innerHTML = `<div class="note ${weirs.length ? 'warn' : ''}">Odhad: ${fmt(slope, 1)} cm/km mezi ${a.name} (km ${fmt(a.rkm, 1)}, ${fmt(a.level, 2)} m n. m.) a ${b.name} (km ${fmt(b.rkm, 1)}, ${fmt(b.level, 2)} m n. m.)${slope < 0 ? '. Záporný spád jsem nastavil na 0.' : ''}${wtxt}</div>`;
+}
+
 $('stage').addEventListener('input', update);
+$('slope').addEventListener('input', update);
 $('radius').addEventListener('input', update);
 $('opacity').addEventListener('input', () => overlay?.setOpacity(+$('opacity').value));
+$('estimate').addEventListener('click', estimateSlope);
+$('fit').addEventListener('click', fitStage);
 $('station').addEventListener('change', () => loadStation($('station').value));
+document.querySelectorAll('[data-zone]').forEach(b => b.addEventListener('change', drawZones));
 
 const index = await (await fetch('data/index.json')).json();
 for (const s of index) $('station').add(new Option(`${s.name} (${s.river})`, s.id));
-for (const name of wanted.wms) { const box = document.querySelector(`[data-wms="${name}"]`); if (box) { box.checked = true; box.dispatchEvent(new Event('change')); } }
-if (wanted.station && index.some(s => s.id === wanted.station)) { $('station').value = wanted.station; }
+if (wanted.station && index.some(s => s.id === wanted.station)) $('station').value = wanted.station;
 if (index.length) loadStation($('station').value); else $('message').innerHTML = '<div class="note warn">Chybí data terénu. Spusťte: node scripts/fetch-dem.mjs &lt;id stanice&gt;</div>';
 </script>
 </body>

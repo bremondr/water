@@ -52,8 +52,9 @@ Last reviewed: 2026-10-14.
 - Terrain: ČÚZK DMR 5G through `ags.cuzk.cz/arcgis2/rest/services/dmr5g/ImageServer`, marked "© ČÚZK". ČÚZK states its open
   spatial data are CC BY 4.0, and DMR 5G should fall under that, but the service metadata only links a general conditions
   PDF that could not be retrieved. Confirm DMR 5G is covered and credit ČÚZK before publishing.
-- Official flood zones (Q5, Q20, Q100, active zone): VÚV TGM WMS at `heis.vuv.cz/data/webmap/wms.dll`, credit "© VÚV TGM, HEIS VÚV".
-  Reuse terms not checked.
+- Official flood zones (Q5, Q20, Q100, Q500, active zone): VÚV TGM WFS at `ags.vuv.cz/.../isvs_voda/MapServer/WFSServer` (capabilities
+  state no fees and no access constraints), credit "© VÚV TGM, HEIS VÚV". Derived rasters are gitignored; reuse terms for
+  redistribution not checked.
 - The experiment draws extents that look like flood maps. Keep it clearly labelled as an illustration (see the ČHMÚ "no warnings"
   point above) and do not publish it as a flood-risk tool without legal and domain review.
 

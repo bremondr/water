@@ -45,3 +45,7 @@ Prototype web app. Node 20+ (ESM, no dependencies, no build step). UI language i
 - On Windows/Git Bash, very large heredocs with quotes can fail; write files with the editor tools instead.
 - Edits to `dam-coords.json` are baked into the cached `/api/reservoirs` response; delete `.cache/reservoirs.json`
   and restart (or wait out the 10-minute TTL) to see them.
+- Colours: all tokens live in `:root` in `index.html` (light) with dark overrides. Status colours `--d0..d4`, `--dry` are for fills and
+  markers only; as **text or chart lines** use the darker `--d0t..` variants, and badges use the `.badge.b-*` classes (fixed
+  text/background pairs, white text fails on the yellow, orange and green). `test/contrast.test.mjs` checks the WCAG ratios of
+  these tokens, so a palette change that breaks AA fails `npm test`.

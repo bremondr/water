@@ -6,10 +6,14 @@
 <title>Stavy a průtoky</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <style>
-:root{--bg:#f6f7f9;--panel:#fff;--text:#1b2430;--muted:#6b7686;--line:#e2e6ec;--accent:#1a6fd4;
---d0:#2e9e5b;--d1:#e3b400;--d2:#ee7d12;--d3:#d92d2d;--d4:#8a2be2;--dry:#8a6d3b;--na:#9aa4b2}
-@media(prefers-color-scheme:dark){:root{--bg:#10151c;--panel:#18202a;--text:#e6ebf2;--muted:#93a0b2;--line:#2a3441;--accent:#5aa2ff}}
+:root{--bg:#f6f7f9;--panel:#ffffff;--text:#1b2430;--muted:#586474;--line:#e2e6ec;--accent:#1a6fd4;--on-accent:#ffffff;--field:#768395;
+--d0:#2e9e5b;--d1:#e3b400;--d2:#ee7d12;--d3:#d92d2d;--d4:#8a2be2;--dry:#8a6d3b;--na:#9aa4b2;
+/* the same status colours as text/lines: darker so they reach 4.5:1 on the light panel (see test/contrast.test.mjs) */
+--d0t:#1e7a45;--d1t:#7a5c00;--d2t:#a85500;--d3t:#b02020;--d4t:#7a22c4;--dryt:#7a5f2f}
+@media(prefers-color-scheme:dark){:root{--bg:#10151c;--panel:#18202a;--text:#e6ebf2;--muted:#93a0b2;--line:#2a3441;--accent:#5aa2ff;--on-accent:#0b1320;--field:#66768b;
+--d0t:#3fbf7a;--d1t:#e3b400;--d2t:#ee7d12;--d3t:#ff6b6b;--d4t:#b57cf0;--dryt:#c9a45c}}
 *{box-sizing:border-box}
+input::placeholder{color:var(--muted);opacity:1}
 html,body{height:100%;margin:0}
 body{font:15px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--text)}
 #app{display:grid;grid-template-columns:360px 1fr;height:100%}
@@ -18,10 +22,10 @@ header{padding:14px 16px 10px}
 h1{font-size:18px;margin:0 0 2px}
 .sub{color:var(--muted);font-size:12px}
 .controls{min-width:0;padding:0 16px 10px;display:grid;gap:8px}
-input,select{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--text);font:inherit}
+input,select{width:100%;padding:9px 10px;border:1px solid var(--field);border-radius:8px;background:var(--bg);color:var(--text);font:inherit}
 .chips{display:flex;gap:6px;flex-wrap:wrap}
-.chip{border:1px solid var(--line);background:var(--bg);color:var(--text);border-radius:99px;padding:4px 10px;font-size:13px;cursor:pointer}
-.chip[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:#fff}
+.chip{border:1px solid var(--field);background:var(--bg);color:var(--text);border-radius:99px;padding:4px 10px;font-size:13px;cursor:pointer}
+.chip[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
 #list{overflow:auto;flex:1;min-height:0;border-top:1px solid var(--line)}
 .row{display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--line);cursor:pointer}
 .row:hover,.row.sel{background:var(--bg)}
@@ -39,8 +43,9 @@ input,select{width:100%;padding:9px 10px;border:1px solid var(--line);border-rad
 .x{margin-left:auto;border:0;background:none;color:var(--muted);font-size:24px;line-height:1;cursor:pointer}
 .big{padding:0 16px 8px;display:flex;gap:20px;align-items:baseline;flex-wrap:wrap}
 .big b{font-size:32px;font-variant-numeric:tabular-nums}.big b small{font-size:14px;font-weight:400;color:var(--muted)}.big span{color:var(--muted)}
-.big span.badge{color:#fff}
-.badge{display:inline-block;padding:2px 10px;border-radius:99px;font-size:13px;font-weight:600}
+.badge{display:inline-block;padding:2px 10px;border-radius:99px;font-size:13px;font-weight:600;color:#fff}
+.badge.b-d0{background:var(--d0);color:#0b1320}.badge.b-d1{background:var(--d1);color:#0b1320}.badge.b-d2{background:var(--d2);color:#0b1320}
+.badge.b-d3{background:var(--d3);color:#ffffff}.badge.b-d4{background:var(--d4);color:#ffffff}.badge.b-dry{background:var(--dry);color:#ffffff}.badge.b-na{background:var(--na);color:#0b1320}
 .tabs{display:flex;gap:6px;padding:0 16px 8px}
 #chart,.chart{padding:0 8px 8px}
 svg text{fill:var(--muted);font-size:11px}
@@ -48,9 +53,9 @@ svg text{fill:var(--muted);font-size:11px}
 .stat{background:var(--bg);border-radius:8px;padding:8px 10px}.stat span{display:block;font-size:12px;color:var(--muted)}
 .thr{padding:0 16px 16px;font-size:13px}.thr div{display:flex;align-items:center;gap:8px;padding:3px 0}
 .leaflet-overlay-pane path{filter:drop-shadow(0 0 2px rgba(0,0,0,.65))}
-.weir{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;background:#0f8b8d;color:#fff;font-size:14px;line-height:1;font-weight:700;border:2px solid #fff;box-shadow:0 0 3px rgba(0,0,0,.7);flex:none}
+.weir{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;background:#0a6a78;color:#fff;font-size:14px;line-height:1;font-weight:700;border:2px solid #fff;box-shadow:0 0 3px rgba(0,0,0,.7);flex:none}
 .weir.sel{border-color:#000}
-.weir.nodata{background:#8a94a3}
+.weir.nodata{background:#5b6573}
 .modes{display:flex;gap:6px;padding:0 16px 10px}
 .modes .chip{flex:1;padding:6px 10px;font-size:14px}
 body.dams #river,body.dams #chips{display:none}
@@ -175,8 +180,8 @@ function chart(s,key,hours=48,dec){
   const x=t=>m.l+(t-t0)/(t1-t0)*(W-m.l-m.r),y=v=>H-m.b-(v-lo)/(hi-lo)*(H-m.t-m.b);
   let g='';
   const ticks=4;for(let i=0;i<=ticks;i++){const v=lo+(hi-lo)*i/ticks;g+=`<line x1="${m.l}" x2="${W-m.r}" y1="${y(v)}" y2="${y(v)}" stroke="${css('--line')}"/><text x="${m.l-6}" y="${y(v)+4}" text-anchor="end">${fmt(v,dec??(hi-lo<10?1:0))}</text>`}
-  th.forEach((t,i)=>{if(t!=null&&t>lo&&t<hi)g+=`<line x1="${m.l}" x2="${W-m.r}" y1="${y(t)}" y2="${y(t)}" stroke="${css(COL[i+1])}" stroke-dasharray="4 3"/><text x="${W-m.r}" y="${y(t)-3}" text-anchor="end" style="fill:${css(COL[i+1])}">${SHORT[i+1]} ${fmt(t,key=='Q'?1:0)}</text>`});
-  if(dry!=null&&dry>lo&&dry<hi)g+=`<line x1="${m.l}" x2="${W-m.r}" y1="${y(dry)}" y2="${y(dry)}" stroke="${css('--dry')}" stroke-dasharray="2 3"/><text x="${W-m.r}" y="${y(dry)-3}" text-anchor="end">nízký stav</text>`;
+  th.forEach((t,i)=>{if(t!=null&&t>lo&&t<hi)g+=`<line x1="${m.l}" x2="${W-m.r}" y1="${y(t)}" y2="${y(t)}" stroke="${css('--d'+(i+1)+'t')}" stroke-dasharray="4 3"/><text x="${W-m.r}" y="${y(t)-3}" text-anchor="end" style="fill:${css('--d'+(i+1)+'t')}">${SHORT[i+1]} ${fmt(t,key=='Q'?1:0)}</text>`});
+  if(dry!=null&&dry>lo&&dry<hi)g+=`<line x1="${m.l}" x2="${W-m.r}" y1="${y(dry)}" y2="${y(dry)}" stroke="${css('--dryt')}" stroke-dasharray="2 3"/><text x="${W-m.r}" y="${y(dry)-3}" text-anchor="end">nízký stav</text>`;
   if(avgV!=null&&avgV>lo&&avgV<hi)g+=`<line x1="${m.l}" x2="${W-m.r}" y1="${y(avgV)}" y2="${y(avgV)}" stroke="${css('--text')}" stroke-opacity=".55" stroke-dasharray="1 4" stroke-width="2"/><text x="${m.l+4}" y="${y(avgV)-4}">dlouhodobý průměr ${fmt(avgV,key=='Q'?(avgV<10?2:1):0)}</text>`;
   for(let k=0;k<=4;k++){const t=t0+(t1-t0)*k/4;g+=`<text x="${x(t)}" y="${H-6}" text-anchor="${k==0?'start':k==4?'end':'middle'}">${fdt(t)}</text>`}
   const d=p.map((q,i)=>(i?'L':'M')+x(q[0]).toFixed(1)+' '+y(q[1]).toFixed(1)).join('');
@@ -191,7 +196,8 @@ const MON=['led','úno','bře','dub','kvě','čvn','čvc','srp','zář','říj',
 const MONTH_LONG=['leden','únor','březen','duben','květen','červen','červenec','srpen','září','říjen','listopad','prosinec'];
 const pragueMonth=t=>Number(new Intl.DateTimeFormat('en-US',{timeZone:'Europe/Prague',month:'numeric'}).format(new Date(t*1000)));
 function relWord(ratio){return ratio<.5?'výrazně podprůměrný':ratio<.8?'podprůměrný':ratio<=1.2?'průměrný':ratio<=2?'nadprůměrný':'výrazně nadprůměrný'}
-function relColor(ratio){return ratio<.5?'var(--d4)':ratio<.8?'var(--dry)':ratio<=1.2?'var(--d0)':ratio<=2?'var(--d2)':'var(--d3)'}
+function relClass(ratio){return ratio<.5?'b-d4':ratio<.8?'b-dry':ratio<=1.2?'b-d0':ratio<=2?'b-d2':'b-d3'}
+const badgeClass=st=>st.dry?'b-dry':st.deg<0?'b-na':'b-d'+st.deg;
 
 // 12 months on a log axis: band = min-max of daily flows in that month, dot = long-term average, dashed = flow now
 function monthlyChart(c,cur,mi){
@@ -204,8 +210,8 @@ function monthlyChart(c,cur,mi){
   for(let e=Math.log10(lo);e<=Math.log10(hi)+1e-9;e++){const v=Math.pow(10,e);g+=`<line x1="${m.l}" x2="${W-m.r}" y1="${y(v)}" y2="${y(v)}" stroke="${css('--line')}"/><text x="${m.l-6}" y="${y(v)+4}" text-anchor="end">${fmt(v,v<1?(v<.1?2:1):0)}</text>`}
   MON.forEach((n,i)=>{g+=`<text x="${x(i)}" y="${H-7}" text-anchor="middle" style="${i===mi?'font-weight:700;fill:var(--text)':''}">${n}</text>`});
   c.avg.forEach((v,i)=>{if(v==null)return;const top=y(c.max[i]??v),bot=y(c.min[i]??v);
-    g+=`<rect x="${x(i)-bw*.28}" y="${top}" width="${bw*.56}" height="${Math.max(2,bot-top)}" rx="3" fill="${css('--accent')}" fill-opacity="${i===mi?.32:.14}"/>`});
-  g+=`<path d="${c.avg.map((v,i)=>v==null?'':(i&&c.avg[i-1]!=null?'L':'M')+x(i).toFixed(1)+' '+y(v).toFixed(1)).join('')}" fill="none" stroke="${css('--accent')}" stroke-width="1.5" stroke-opacity=".7"/>`;
+    g+=`<rect x="${x(i)-bw*.28}" y="${top}" width="${bw*.56}" height="${Math.max(2,bot-top)}" rx="3" fill="${css('--accent')}" fill-opacity="${i===mi?.32:.16}" stroke="${css('--accent')}" stroke-width="1"/>`});
+  g+=`<path d="${c.avg.map((v,i)=>v==null?'':(i&&c.avg[i-1]!=null?'L':'M')+x(i).toFixed(1)+' '+y(v).toFixed(1)).join('')}" fill="none" stroke="${css('--accent')}" stroke-width="1.5"/>`;
   c.avg.forEach((v,i)=>{if(v!=null)g+=`<circle cx="${x(i)}" cy="${y(v)}" r="${i===mi?5:3}" fill="${css('--accent')}"/>`});
   if(cur>0)g+=`<line x1="${m.l}" x2="${W-m.r}" y1="${y(cur)}" y2="${y(cur)}" stroke="${css('--text')}" stroke-dasharray="5 3" stroke-width="1.5"/><text x="${W-m.r}" y="${y(cur)-4}" text-anchor="end" style="fill:var(--text)">nyní ${fmt(cur,cur<10?2:1)} m³/s</text>`;
   return`<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Měsíční průměry průtoku">${g}</svg>`;
@@ -231,7 +237,7 @@ function longTerm(s){
   if(c?.avg&&c.avg[mi]!=null&&q!=null){
     const ma=c.avg[mi],ratio=ma>0?q/ma:null;
     out+=`<div style="display:block">Průměr za ${MONTH_LONG[mi]}: <b>${fmt(ma,ma<10?2:1)} m³/s</b> (denní průtoky ${fmt(c.min[mi],c.min[mi]<10?2:1)}–${fmt(c.max[mi],c.max[mi]<10?2:1)} m³/s)</div>`;
-    if(ratio!=null)out+=`<div style="display:block">Nyní <span class="badge" style="background:${relColor(ratio)}">${relWord(ratio)}</span> · ${fmt(ratio*100,0)} % měsíčního průměru</div>`;
+    if(ratio!=null)out+=`<div style="display:block">Nyní <span class="badge ${relClass(ratio)}">${relWord(ratio)}</span> · ${fmt(ratio*100,0)} % měsíčního průměru</div>`;
   }
   const ex=c?.mdq&&q!=null?exceedanceDays(c.mdq,q):null;
   if(ex){
@@ -256,7 +262,7 @@ function open(s,pan=true){
   const th=(metric=='H'?s.h:s.q);
   el.innerHTML=`<div class="dh"><div><h2>${esc(s.name)}</h2><p>${esc(s.river)} · ${esc(s.id)}</p></div><button class="x" aria-label="Zavřít">×</button></div>
    <div class="big"><b>${st.h!=null?fmt(st.h)+' <small>cm</small>':'–'}</b><b>${st.q!=null?fmt(st.q,2)+' <small>m³/s</small>':''}</b>
-    ${st.deg>=0?`<span class="badge" style="background:${c}">${label}</span>`:''}</div>
+    ${st.deg>=0?`<span class="badge ${badgeClass(st)}">${label}</span>`:''}</div>
    <div class="big" style="padding-bottom:10px"><span>${a.length?'Naměřeno '+fdt(a[a.length-1][0]):''}${tr!=null?` · za poslední hodinu ${tr>0?'↑ +':tr<0?'↓ ':'→ '}${fmt(tr,d)} ${u}`:''}</span></div>
    <div class="tabs">${s.H.length?`<button class="chip" data-m="H" aria-pressed="${metric=='H'}">Vodní stav</button>`:''}${s.Q.length?`<button class="chip" data-m="Q" aria-pressed="${metric=='Q'}">Průtok</button>`:''}</div>
    <div id="chart">${chart(s,metric)}</div>
@@ -343,7 +349,7 @@ function openWeir(d,pan=true){
   const lowQ=d.qLow!=null&&d.flow!=null&&d.flow<=d.qLow;
   const ser={H:d.series.H,Q:d.series.Q,h:[],q:[],dryH:null,dryQ:d.qLow};
   el.innerHTML=`<div class="dh"><div><h2>${esc(d.name)}</h2><p>Jez / zdymadlo · ${esc(d.river)} · ${esc(d.pov)}</p></div><button class="x" aria-label="Zavřít">×</button></div>
-   <div class="big"><b>${fmt(d.level,2)} <small>m n. m.</small></b>${has?`<b>${fmt(d.flow,1)} <small>m³/s</small></b>`:''}${lowQ?'<span class="badge" style="background:var(--dry)">Nízký průtok</span>':''}</div>
+   <div class="big"><b>${fmt(d.level,2)} <small>m n. m.</small></b>${has?`<b>${fmt(d.flow,1)} <small>m³/s</small></b>`:''}${lowQ?'<span class="badge b-dry">Nízký průtok</span>':''}</div>
    <div class="big" style="padding-bottom:6px"><span>Naměřeno ${esc(d.time)}</span></div>
    <div class="tabs"><button class="chip" data-m="H" aria-pressed="${weirMetric==='H'||!has}">Hladina</button>${has?`<button class="chip" data-m="Q" aria-pressed="${weirMetric==='Q'}">Průtok</button>`:''}</div>
    <div id="chart">${chart(ser,has?weirMetric:'H',240,weirMetric==='Q'&&has?1:2)}</div>

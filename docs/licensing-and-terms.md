@@ -48,6 +48,15 @@ Last reviewed: 2026-10-14.
 - Names, river km and stage list from cs.wikipedia (CC BY-SA); positions from OSM lock_gate/weir ways (ODbL) and Wikipedia
   article coordinates. Credit both in the sources page. Same review item as the dam positions below.
 
+### Terrain and official flood zones (experiment)
+- Terrain: ČÚZK DMR 5G through `ags.cuzk.cz/arcgis2/rest/services/dmr5g/ImageServer`, marked "© ČÚZK". ČÚZK states its open
+  spatial data are CC BY 4.0, and DMR 5G should fall under that, but the service metadata only links a general conditions
+  PDF that could not be retrieved. Confirm DMR 5G is covered and credit ČÚZK before publishing.
+- Official flood zones (Q5, Q20, Q100, active zone): VÚV TGM WMS at `heis.vuv.cz/data/webmap/wms.dll`, credit "© VÚV TGM, HEIS VÚV".
+  Reuse terms not checked.
+- The experiment draws extents that look like flood maps. Keep it clearly labelled as an illustration (see the ČHMÚ "no warnings"
+  point above) and do not publish it as a flood-risk tool without legal and domain review.
+
 ### OpenStreetMap
 - Map tiles: attribution "© OpenStreetMap" is shown. The public tile server is for light use only
   (https://operations.osmfoundation.org/policies/tiles/). Heavy or public use needs a tile provider.

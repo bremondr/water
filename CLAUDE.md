@@ -20,6 +20,12 @@ Prototype web app. Node 20+ (ESM, no dependencies, no build step). UI language i
 - `climate.mjs`: long-term characteristics per station (ČHMÚ `characteristic/`: Qa, monthly avg/min/max flow, M-day flow-duration
   curve, reference period 1991-2020), served at `/api/climate`, cached 7 days. Level averages (`ha`) and `qa` come from station
   metadata and ride along in `/api/stations`.
+- `experiments/flood/` + `dem.mjs` + `scripts/fetch-dem.mjs`: **experiment**, not part of the app. A 'bathtub with connectivity'
+  flood extent: terrain from ČÚZK DMR 5G (ImageServer, 2 m grid, window of 5 km around a station, Web Mercator), water
+  plane = gauge zero (`WGS_ELE` in the ČHMÚ metadata) + stage, flooded = below the plane and connected to the river.
+  Open `/experiments/flood/` after `node scripts/fetch-dem.mjs <stationId>` (data is gitignored; four stations were fetched
+  during development). The DEM shows rivers at their level during the LiDAR survey, so stages below that stay in the channel.
+  Known limits are listed on the page; do not present it as a forecast or a flood map.
 - `basins.mjs`: station → povodí mapping from the hydrological order number (approximate).
 - `cache.mjs`: stale-while-revalidate cache persisted to `.cache/` (gitignored). A restart serves the last good data
   instantly. A failed refresh keeps the previous value.

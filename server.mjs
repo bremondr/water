@@ -120,6 +120,15 @@ const json = { 'content-type': 'application/json', 'cache-control': 'max-age=60'
 http.createServer(async (req, res) => {
   try {
     if (req.url.startsWith('/api/reservoirs')) { res.writeHead(200, json); return res.end(await reservoirs.get()); }
+    // experimental flood-extent page and its terrain data (experiments/flood/), static files only
+    if (req.url.startsWith('/experiments/flood/')) {
+      const rel = decodeURIComponent(req.url.split('?')[0].slice('/experiments/flood/'.length)) || 'index.html';
+      const root = new URL('./experiments/flood/', import.meta.url), file = new URL(rel, root);
+      if (!file.href.startsWith(root.href)) { res.writeHead(403); return res.end('forbidden'); }
+      const types = { html: 'text/html; charset=utf-8', mjs: 'text/javascript; charset=utf-8', json: 'application/json', bin: 'application/octet-stream' };
+      try { const body = await readFile(file); res.writeHead(200, { 'content-type': types[rel.split('.').pop()] ?? 'application/octet-stream' }); return res.end(body); }
+      catch { res.writeHead(404); return res.end('not found'); }
+    }
     // the browser reuses the pure helpers of climate.mjs (exceedanceDays), so there is one copy of that logic
     if (req.url === '/climate.mjs') { res.writeHead(200, { 'content-type': 'text/javascript; charset=utf-8' }); return res.end(await readFile(new URL('./climate.mjs', import.meta.url))); }
     if (req.url.startsWith('/api/climate')) { res.writeHead(200, { ...json, 'cache-control': 'max-age=3600' }); return res.end(await climate.get()); }

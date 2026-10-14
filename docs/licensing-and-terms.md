@@ -59,6 +59,11 @@ Last reviewed: 2026-10-14.
 - The experiment draws extents that look like flood maps. Keep it clearly labelled as an illustration (see the ČHMÚ "no warnings"
   point above) and do not publish it as a flood-risk tool without legal and domain review.
 
+- VÚV metadata for the flood-zone data set (`CZ-VUV-MD-ZaplavUzemi`): data use falls under the Copyright Act, **source must always be credited**,
+  data may only be used for purposes consistent with the metadata, and the polygons are **indicative only** (binding extent: the local water
+  authority or river manager). Data set created 2011-04-18, last revised 2025-08-31; aggregated from the individual determinations of the
+  water authorities, so the age of the underlying determination differs per river reach (the WFS carries only a determination id, no date).
+
 ### OpenStreetMap
 - Map tiles: attribution "© OpenStreetMap" is shown. The public tile server is for light use only
   (https://operations.osmfoundation.org/policies/tiles/). Heavy or public use needs a tile provider.

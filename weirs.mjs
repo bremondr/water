@@ -3,14 +3,15 @@
 // either. Povodí Labe publishes each as a measuring station (Mereni.aspx) with an hourly table of level and flow.
 // Only stations that report the level in m a.s.l. (a pool level above a weir) are weirs; of the 124 stations on
 // that portal, exactly two do: Střekov and Opatovice nad Labem (checked 2026-10-14).
+import { readFile } from 'node:fs/promises';
 import { getPage } from './dams.mjs';
 
 const PAGE = 'https://www.pla.cz/portal/sap/cz/pc/Mereni.aspx';
 
-// Positions: Střekov from the OSM information boards at the lock (Nominatim), Opatovice from the OSM dam way
-// next to the village. Both are marked approximate.
+// Positions: Střekov from the OSM information boards at the lock (Nominatim), confirmed by the user as correct;
+// Opatovice from the OSM dam way next to the village, marked approximate.
 export const WEIRS = [
-  { key: 'plaw:74', id: 74, oid: 3, name: 'Střekov (Masarykovo zdymadlo)', river: 'Labe', pov: 'Povodí Labe', lat: 50.6389, lon: 14.0494, approx: true },
+  { key: 'plaw:74', id: 74, oid: 3, name: 'Střekov (Masarykovo zdymadlo)', river: 'Labe', pov: 'Povodí Labe', lat: 50.6389, lon: 14.0494, approx: false },
   { key: 'plaw:65', id: 65, oid: 3, name: 'Opatovice nad Labem', river: 'Labe', pov: 'Povodí Labe', lat: 50.0759, lon: 15.8119, approx: true },
 ];
 
@@ -66,4 +67,19 @@ export async function scrapeWeirs(weirs = WEIRS) {
     else errors.push({ key: weirs[i].key, pov: `${weirs[i].pov} (${weirs[i].name})`, message: String(r.reason?.message ?? r.reason) });
   });
   return { weirs: out, errors };
+}
+
+// Labe weirs and locks for which no live data is published anywhere we could find. They are shown on the map
+// as "bez dat". Source list: weirs-nodata.json (compiled from OSM, Wikipedia, ŘVC and Povodí Labe pages; see
+// each entry's `source`). Entries are skipped if they already have live data above.
+export async function loadNoDataWeirs(file = new URL('./weirs-nodata.json', import.meta.url)) {
+  let list = [];
+  try { list = JSON.parse(await readFile(file, 'utf8')); } catch { return []; }
+  const live = new Set(WEIRS.map(x => x.key));
+  return list.filter(x => !live.has(x.key)).map(x => ({
+    key: x.key, kind: 'weir', noData: true, pov: 'Povodí Labe', name: x.name, river: 'Labe',
+    lat: x.lat, lon: x.lon, approx: x.confidence !== 'high',
+    type: x.type ?? null, hasLock: x.hasLock ?? null, rkm: x.rkm ?? null, group: x.group ?? null,
+    source: x.source ?? '', note: x.note ?? '', warnings: [],
+  }));
 }

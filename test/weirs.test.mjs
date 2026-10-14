@@ -39,3 +39,25 @@ test('pragueToEpoch handles summer and winter time', () => {
   assert.equal(new Date(pragueToEpoch('15.01.2026 12:00') * 1000).toISOString(), '2026-01-15T11:00:00.000Z');   // CET, UTC+1
   assert.equal(pragueToEpoch('nonsense'), null);
 });
+
+test('loadNoDataWeirs: maps the static list, approximate unless high confidence, skips live keys', async () => {
+  const { loadNoDataWeirs } = await import('../weirs.mjs');
+  const { mkdtemp, writeFile, rm } = await import('node:fs/promises');
+  const { tmpdir } = await import('node:os');
+  const { join } = await import('node:path');
+  const { pathToFileURL } = await import('node:url');
+  const dir = await mkdtemp(join(tmpdir(), 'weirs-'));
+  const file = pathToFileURL(join(dir, 'w.json'));
+  await writeFile(file, JSON.stringify([
+    { key: 'plaw:nd-a', name: 'Zdymadlo A', type: 'zdymadlo', hasLock: true, rkm: 1.5, lat: 50, lon: 14, confidence: 'high' },
+    { key: 'plaw:nd-b', name: 'Jez B', type: 'jez', lat: 50.1, lon: 14.1, confidence: 'medium' },
+    { key: 'plaw:74', name: 'duplicate of a live weir', lat: 50, lon: 14, confidence: 'high' },
+  ]));
+  const out = await loadNoDataWeirs(file);
+  assert.deepEqual(out.map(w => w.key), ['plaw:nd-a', 'plaw:nd-b']);
+  assert.ok(out.every(w => w.kind === 'weir' && w.noData === true && w.river === 'Labe'));
+  assert.equal(out[0].approx, false);
+  assert.equal(out[1].approx, true);
+  assert.deepEqual(await loadNoDataWeirs(pathToFileURL(join(dir, 'missing.json'))), []);
+  await rm(dir, { recursive: true });
+});

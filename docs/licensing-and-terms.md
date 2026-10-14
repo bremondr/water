@@ -40,6 +40,10 @@ Last reviewed: 2026-10-14.
 - `weirs.mjs` scrapes two station pages (Střekov, Opatovice nad Labem) from `pla.cz/portal/sap`. Same portal, same
   open terms questions as the reservoir pages above (and the same MGE Data authorship).
 
+### Weirs without data (`weirs-nodata.json`)
+- Names, river km and stage list from cs.wikipedia (CC BY-SA); positions from OSM lock_gate/weir ways (ODbL) and Wikipedia
+  article coordinates. Credit both in the sources page. Same review item as the dam positions below.
+
 ### OpenStreetMap
 - Map tiles: attribution "© OpenStreetMap" is shown. The public tile server is for light use only
   (https://operations.osmfoundation.org/policies/tiles/). Heavy or public use needs a tile provider.

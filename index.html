@@ -50,6 +50,7 @@ svg text{fill:var(--muted);font-size:11px}
 .leaflet-overlay-pane path{filter:drop-shadow(0 0 2px rgba(0,0,0,.65))}
 .weir{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;background:#0f8b8d;color:#fff;font-size:14px;line-height:1;font-weight:700;border:2px solid #fff;box-shadow:0 0 3px rgba(0,0,0,.7);flex:none}
 .weir.sel{border-color:#000}
+.weir.nodata{background:#8a94a3}
 .modes{display:flex;gap:6px;padding:0 16px 10px}
 .modes .chip{flex:1;padding:6px 10px;font-size:14px}
 body.dams #river,body.dams #chips{display:none}
@@ -204,7 +205,7 @@ function open(s,pan=true){
 
 function legend(){
   if(mode==='dam'){
-    $('legend').innerHTML='<b>Zaplnění zásobního prostoru</b>'+[[95,'≥ 95 %'],[60,'60–95 %'],[30,'30–60 %'],[0,'< 30 %']].map(([f,l])=>`<div>${tank(f===0?10:f)}${l}</div>`).join('')+`<div>${weirIcon}Jez / zdymadlo (${visibleDams().filter(d=>d.kind==='weir').length})</div><div><span class="ring-key"></span>Poloha přibližná (${visibleDams().filter(d=>d.approx).length})</div><div class="sub">${visibleDams().filter(d=>d.kind!=='weir').length} nádrží</div>`+damErrors.map(e=>`<div class="sub">⚠ ${esc(e.pov)} nedostupné${e.haveOlderData?' (starší data)':''}</div>`).join('');
+    $('legend').innerHTML='<b>Zaplnění zásobního prostoru</b>'+[[95,'≥ 95 %'],[60,'60–95 %'],[30,'30–60 %'],[0,'< 30 %']].map(([f,l])=>`<div>${tank(f===0?10:f)}${l}</div>`).join('')+`<div>${weirIcon}Jez / zdymadlo, živá data (${visibleDams().filter(d=>d.kind==='weir'&&!d.noData).length})</div><div>${weirNoData}Jez / zdymadlo, bez dat (${visibleDams().filter(d=>d.noData).length})</div><div><span class="ring-key"></span>Poloha přibližná (${visibleDams().filter(d=>d.approx).length})</div><div class="sub">${visibleDams().filter(d=>d.kind!=='weir').length} nádrží, ${visibleDams().filter(d=>d.kind==='weir').length} jezů</div>`+damErrors.map(e=>`<div class="sub">⚠ ${esc(e.pov)} nedostupné${e.haveOlderData?' (starší data)':''}</div>`).join('');
     return;
   }
   const p=$('pov').value,rv=$('river').value,base=S.filter(s=>(!p||s.pov===p)&&(!rv||s.river===rv));
@@ -219,20 +220,22 @@ function legend(){
 // ---- Reservoirs (all five povodí, scraped from their portals by the server) ----
 const tankCol=f=>f==null?'var(--na)':f>=95?'#0b4fa8':f>=60?'#1a6fd4':f>=30?'#3f93e6':'#7ab6f2';
 const weirIcon='<span class="weir" title="Jez / zdymadlo">≋</span>';
+const weirNoData='<span class="weir nodata" title="Jez / zdymadlo bez dat">≋</span>';
+const weirGlyph=d=>d.noData?weirNoData:weirIcon;
 const tank=(f,cls='')=>`<span class="tank ${cls}" style="--f:${f??0}%;--tank:${tankCol(f)}"></span>`;
 function visibleDams(){const q=$('q').value.trim().toLowerCase(),p=$('pov').value;return D.filter(d=>(!p||d.pov===p)&&(!q||(d.name+' '+d.river).toLowerCase().includes(q)))}
 function renderDams(){
   const v=visibleDams();
   markers.forEach(m=>map.removeLayer(m));markers.clear();
   v.forEach(d=>{
-    const glyph=d.kind==='weir'?weirIcon:tank(d.fillPct);
+    const glyph=d.kind==='weir'?weirGlyph(d):tank(d.fillPct);
     const icon=L.divIcon({className:'dam-icon'+(d===selD?' sel':''),html:d.approx?`<span class="ring">${glyph}</span>`:glyph,iconSize:d.approx?[36,36]:[24,26],iconAnchor:d.approx?[18,18]:[12,13]});
-    const m=L.marker([d.lat,d.lon],{icon}).addTo(map).bindTooltip(`${d.name} – ${d.kind==='weir'?fmt(d.level,2)+' m n. m.':(d.fillPct==null?'–':fmt(d.fillPct,0)+' %')}${d.approx?' (poloha přibližná)':''}`).on('click',()=>openDam(d,false));
+    const m=L.marker([d.lat,d.lon],{icon}).addTo(map).bindTooltip(`${d.name} – ${d.kind==='weir'?(d.noData?'bez dat':fmt(d.level,2)+' m n. m.'):(d.fillPct==null?'–':fmt(d.fillPct,0)+' %')}${d.approx?' (poloha přibližná)':''}`).on('click',()=>openDam(d,false));
     markers.set('d'+d.key,m);
   });
-  $('list').innerHTML=v.map(d=>`<div class="row ${d===selD?'sel':''}" data-id="${d.key}">${d.kind==='weir'?weirIcon:tank(d.fillPct)}
+  $('list').innerHTML=v.map(d=>`<div class="row ${d===selD?'sel':''}" data-id="${d.key}">${d.kind==='weir'?weirGlyph(d):tank(d.fillPct)}
     <div class="n"><b>${esc(d.name)}</b><span>${esc(d.river)}</span></div>
-    <div class="v">${d.kind==='weir'?fmt(d.level,2)+' m n. m.':(d.fillPct==null?'–':fmt(d.fillPct,0)+' %')}<small>${d.kind==='weir'?(d.flow==null?'jez / zdymadlo':fmt(d.flow,1)+' m³/s'):fmt(d.level,2)+' m n. m.'}</small></div></div>`).join('')||'<div class="row">Nic nenalezeno</div>';
+    <div class="v">${d.kind==='weir'?(d.noData?'bez dat':fmt(d.level,2)+' m n. m.'):(d.fillPct==null?'–':fmt(d.fillPct,0)+' %')}<small>${d.kind==='weir'?(d.noData?'jez / zdymadlo':d.flow==null?'jez / zdymadlo':fmt(d.flow,1)+' m³/s'):fmt(d.level,2)+' m n. m.'}</small></div></div>`).join('')||'<div class="row">Nic nenalezeno</div>';
 }
 // Flow below the Vltava cascade, from the ČHMÚ river stations (only for dams whose own outflow is not published)
 function refGauges(d){
@@ -245,7 +248,27 @@ function refGauges(d){
    <div class="sub" style="padding:0 16px 8px">Graf: ${esc(g[0].name)}, průtok za posledních 48 h.</div>
    <div class="note">Přímo pod Orlíkem, Kamýkem, Slapy ani Štěchovicemi ČHMÚ nic neměří. Nejbližší stanice leží až pod celou kaskádou, takže průtok zahrnuje i přítoky pod přehradami (např. Sázavu a Kocábu) a není odtokem této jedné nádrže. Slouží jako orientace, ne jako náhrada chybějící hodnoty.</div>`;
 }
+function openNoDataWeir(d,pan=true){
+  selD=d;const el=$('detail');
+  const kind={zdymadlo:'Zdymadlo',jez:'Jez','plavebni-stupen':'Plavební stupeň'}[d.type]||'Jez / zdymadlo';
+  el.innerHTML=`<div class="dh"><div><h2>${esc(d.name)}</h2><p>${kind} · ${esc(d.river)} · ${esc(d.pov)}</p></div><button class="x" aria-label="Zavřít">×</button></div>
+   <div class="big"><b>Bez dat</b></div>
+   <div class="note">Pro tento objekt jsme nenašli žádná veřejně dostupná měření hladiny ani průtoku, proto jsou zobrazeny jen jeho poloha a základní údaje.</div>
+   <div class="kv">
+    <div class="stat"><span>Typ</span>${kind}</div>
+    <div class="stat"><span>Plavební komora</span>${d.hasLock==null?'neznámo':d.hasLock?'ano':'ne'}</div>
+    <div class="stat"><span>Říční km (Elbe-km)</span>${d.rkm==null?'–':fmt(d.rkm,2)}</div>
+    <div class="stat"><span>Oblast</span>${d.group==='upper'?'horní Labe':'splavněné Labe'}</div>
+   </div>
+   ${d.note?`<div class="note">${esc(d.note)}</div>`:''}
+   ${d.approx?'<div class="note warn">Poloha je přibližná, skutečný objekt může být o několik set metrů jinde.</div>':''}`;
+  el.classList.add('open');
+  el.querySelector('.x').onclick=()=>{selD=null;el.classList.remove('open');renderDams()};
+  if(pan)map.flyTo([d.lat,d.lon],Math.max(map.getZoom(),11),{duration:.6});
+  renderDams();
+}
 function openWeir(d,pan=true){
+  if(d.noData)return openNoDataWeir(d,pan);
   selD=d;const el=$('detail');
   const u=(v,unit,dg=2)=>v==null?'–':`${fmt(v,dg)} ${unit}`;
   const row=(l,v)=>`<div class="stat"><span>${l}</span>${v}</div>`;

@@ -14,6 +14,9 @@ Prototype web app. Node 20+ (ESM, no dependencies, no build step). UI language i
 - `dams.mjs`: scraper + pure functions (`parseTable`, `joinTables`, `finalizeReservoirs`) for the five povodí portals.
 - `weirs.mjs`: Elbe weirs/locks (Střekov, Opatovice nad Labem) scraped from Povodí Labe station pages; they ride along in
   `/api/reservoirs` as `weirs` and show in the "Nádrže a jezy" mode. Only stations whose level is in m n. m. are weirs (2 of 124).
+- `weirs-nodata.json`: 26 more Elbe weirs/locks (Pardubice to Lovosice, plus 3 on the upper Labe) with **no** live data anywhere;
+  they appear greyed as "bez dat". Compiled from OSM, cs.wikipedia (Střední/Dolní Labe vodní cesta) and Povodí Labe pages;
+  `rkm` is the Elbe-km scheme. Hadík (a former stage) is deliberately left out. Entries not `high` confidence show as approximate.
 - `basins.mjs`: station → povodí mapping from the hydrological order number (approximate).
 - `cache.mjs`: stale-while-revalidate cache persisted to `.cache/` (gitignored). A restart serves the last good data
   instantly. A failed refresh keeps the previous value.

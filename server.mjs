@@ -4,7 +4,7 @@
 import http from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { scrapeAll, finalizeReservoirs } from './dams.mjs';
-import { scrapeWeirs } from './weirs.mjs';
+import { scrapeWeirs, loadNoDataWeirs } from './weirs.mjs';
 import { povodi } from './basins.mjs';
 import { createCache } from './cache.mjs';
 
@@ -84,6 +84,7 @@ async function buildStations() {
 // Scraping lives in dams.mjs; positions come from dam-coords.json (made once by geocode.mjs), since the
 // portals publish none.
 const COORDS = JSON.parse(await readFile(new URL('./dam-coords.json', import.meta.url), 'utf8'));
+const NODATA_WEIRS = (await loadNoDataWeirs());
 
 async function buildReservoirs(prev) {
   const [{ dams, errors }, { weirs, errors: weirErrors }] = await Promise.all([scrapeAll(), scrapeWeirs()]);
@@ -98,7 +99,7 @@ async function buildReservoirs(prev) {
   return {
     updated: new Date().toISOString(),
     reservoirs: [...finalizeReservoirs(dams, COORDS), ...kept],
-    weirs: [...weirs, ...keptWeirs],
+    weirs: [...weirs, ...keptWeirs, ...NODATA_WEIRS],
     errors: [
       ...errors.map(e => ({ pov: e.pov, message: e.message, haveOlderData: kept.some(d => d.pov === e.pov) })),
       ...weirErrors.map(e => ({ pov: e.pov, message: e.message, haveOlderData: keptWeirs.some(w => w.key === e.key) })),

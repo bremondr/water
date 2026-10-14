@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stavy a průtoky</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+:root{--bg:#f6f7f9;--panel:#fff;--text:#1b2430;--muted:#6b7686;--line:#e2e6ec;--accent:#1a6fd4;
+--d0:#2e9e5b;--d1:#e3b400;--d2:#ee7d12;--d3:#d92d2d;--d4:#8a2be2;--dry:#8a6d3b;--na:#9aa4b2}
+@media(prefers-color-scheme:dark){:root{--bg:#10151c;--panel:#18202a;--text:#e6ebf2;--muted:#93a0b2;--line:#2a3441;--accent:#5aa2ff}}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{font:15px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--text)}
+#app{display:grid;grid-template-columns:360px 1fr;height:100%}
+#side{display:flex;flex-direction:column;background:var(--panel);border-right:1px solid var(--line);min-height:0}
+header{padding:14px 16px 10px}
+h1{font-size:18px;margin:0 0 2px}
+.sub{color:var(--muted);font-size:12px}
+.controls{min-width:0;padding:0 16px 10px;display:grid;gap:8px}
+input,select{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--text);font:inherit}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:var(--bg);color:var(--text);border-radius:99px;padding:4px 10px;font-size:13px;cursor:pointer}
+.chip[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:#fff}
+#list{overflow:auto;flex:1;min-height:0;border-top:1px solid var(--line)}
+.row{display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--line);cursor:pointer}
+.row:hover,.row.sel{background:var(--bg)}
+.dot{width:12px;height:12px;border-radius:50%;flex:none;display:inline-block}
+.row .n{flex:1;min-width:0}.row .n b{display:block;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .n span{color:var(--muted);font-size:12px}
+.row .v{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.row .v small{display:block;color:var(--muted);font-size:12px}
+#main{position:relative;min-height:0}
+#map{position:absolute;inset:0}
+#detail{position:absolute;z-index:1000;right:16px;top:16px;bottom:16px;width:min(460px,calc(100% - 32px));background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:0 8px 30px #0003;display:none;flex-direction:column;overflow:auto}
+#detail.open{display:flex}
+.dh{padding:14px 16px;display:flex;gap:10px;align-items:flex-start}
+.dh h2{margin:0;font-size:18px}.dh p{margin:2px 0 0;color:var(--muted);font-size:13px}
+.x{margin-left:auto;border:0;background:none;color:var(--muted);font-size:24px;line-height:1;cursor:pointer}
+.big{padding:0 16px 8px;display:flex;gap:20px;align-items:baseline;flex-wrap:wrap}
+.big b{font-size:32px;font-variant-numeric:tabular-nums}.big b small{font-size:14px;font-weight:400;color:var(--muted)}.big span{color:var(--muted)}
+.big span.badge{color:#fff}
+.badge{display:inline-block;padding:2px 10px;border-radius:99px;font-size:13px;font-weight:600}
+.tabs{display:flex;gap:6px;padding:0 16px 8px}
+#chart{padding:0 8px 8px}
+svg text{fill:var(--muted);font-size:11px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:0 16px 12px}
+.stat{background:var(--bg);border-radius:8px;padding:8px 10px}.stat span{display:block;font-size:12px;color:var(--muted)}
+.thr{padding:0 16px 16px;font-size:13px}.thr div{display:flex;align-items:center;gap:8px;padding:3px 0}
+.leaflet-overlay-pane path{filter:drop-shadow(0 0 2px rgba(0,0,0,.65))}
+.modes{display:flex;gap:6px;padding:0 16px 10px}
+.modes .chip{flex:1;padding:6px 10px;font-size:14px}
+body.dams #river,body.dams #chips{display:none}
+.tank{display:inline-block;width:14px;height:18px;border:2px solid #fff;border-radius:3px;box-shadow:0 0 3px rgba(0,0,0,.7);background:linear-gradient(to top,var(--tank) var(--f),#d5e6f9 var(--f));flex:none}
+.tank.big{width:26px;height:34px}
+.dam-icon{background:none;border:0}
+.dam-icon .tank{width:20px;height:26px;border-radius:4px}
+.dam-icon.sel .tank{border-color:#000}
+.ring{display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50%;border:2px dashed #e8590c;background:rgba(255,255,255,.65);box-shadow:0 0 4px rgba(0,0,0,.45)}
+.ring-key{display:inline-block;width:14px;height:14px;border-radius:50%;border:2px dashed #e8590c;flex:none}
+.note.warn{background:#fff4e5;color:#7a3e00;border:1px solid #f3c58b}
+@media(prefers-color-scheme:dark){.note.warn{background:#3a2a14;color:#f5d3a0;border-color:#7a5a2a}}
+.gauge{height:14px;border-radius:7px;background:#d5e6f9;overflow:hidden;margin:4px 16px 2px}
+.gauge i{display:block;height:100%;background:var(--accent)}
+.kv{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;padding:8px 16px 12px}
+.note{margin:0 16px 12px;padding:8px 10px;border-radius:8px;background:var(--bg);font-size:13px;color:var(--muted)}
+.legend{position:absolute;z-index:900;left:12px;bottom:24px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:12px;display:grid;gap:3px}
+.legend div{display:flex;gap:6px;align-items:center}
+#bar{display:none}
+@media(max-width:800px){
+ #app{grid-template-columns:minmax(0,1fr);grid-template-rows:auto 1fr}
+ #side{border-right:0;border-bottom:1px solid var(--line)}
+ #list{display:none}
+ body.showlist #list{display:block;max-height:45vh}
+ #bar{display:block}
+ header{padding:10px 16px 6px}
+ #detail{inset:auto 0 0 0;width:auto;max-height:78%;border-radius:14px 14px 0 0}
+ .legend{display:none}
+}
+</style>
+</head>
+<body>
+<div id="app">
+ <aside id="side">
+  <header><h1>Stavy a průtoky</h1><div class="sub" id="updated">Načítám…</div></header>
+  <div class="modes" id="modes">
+   <button class="chip" data-mode="st" aria-pressed="true">Stanice</button>
+   <button class="chip" data-mode="dam" aria-pressed="false">Nádrže</button>
+  </div>
+  <div class="controls">
+   <input id="q" type="search" placeholder="Hledat stanici nebo tok…" autocomplete="off">
+   <select id="pov"><option value="">Všechna povodí</option></select>
+   <select id="river"><option value="">Všechny toky</option></select>
+   <div class="chips" id="chips"></div>
+   <button class="chip" id="bar" aria-pressed="false">Zobrazit seznam</button>
+  </div>
+  <div id="list"></div>
+ </aside>
+ <main id="main"><div id="map"></div>
+  <div class="legend" id="legend"></div>
+  <section id="detail"></section>
+ </main>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+const COL=['--d0','--d1','--d2','--d3','--d4'];
+const DEG=['Bez povodňové aktivity','1. SPA – bdělost','2. SPA – pohotovost','3. SPA – ohrožení','Extrémní povodeň'];
+const SHORT=['Normální','1. SPA','2. SPA','3. SPA','Extrém'];
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt=(v,d=0)=>v==null?'–':v.toLocaleString('cs-CZ',{maximumFractionDigits:d});
+const fdt=t=>new Date(t*1000).toLocaleString('cs-CZ',{day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'});
+
+let S=[],sel=null,filterDeg=null,metric='H',markers=new Map();
+let D=[],selD=null,mode='st';
+
+// station status = highest flood degree reached by the current level (or flow if no level thresholds)
+function status(s){
+  const last=a=>a.length?a[a.length-1][1]:null;
+  const h=last(s.H),q=last(s.Q);
+  let deg=-1,dry=false;
+  const th=h!=null&&s.h.some(x=>x!=null)?[h,s.h,s.dryH]:q!=null&&s.q.some(x=>x!=null)?[q,s.q,s.dryQ]:null;
+  if(th){deg=0;th[1].forEach((t,i)=>{if(t!=null&&th[0]>=t)deg=i+1});
+    if(deg==0&&th[2]!=null&&th[0]<=th[2])dry=true}
+  return{h,q,deg,dry};
+}
+const color=st=>st.dry?css('--dry'):st.deg<0?css('--na'):css(COL[st.deg]);
+
+function trend(a){ // change over the last ~hour
+  if(a.length<2)return null;const t=a[a.length-1][0];let j=a.length-1;
+  while(j>0&&t-a[j][0]<3600)j--;return a[a.length-1][1]-a[j][1];
+}
+
+const map=L.map('map').setView([49.8,15.5],7);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18,attribution:'© OpenStreetMap · data ČHMÚ'}).addTo(map);
+
+function visible(){
+  const q=$('q').value.trim().toLowerCase(),r=$('river').value,p=$('pov').value;
+  return S.filter(s=>(!p||s.pov===p)&&(!r||s.river===r)&&(!q||(s.name+' '+s.river).toLowerCase().includes(q))&&
+    (filterDeg==null||(filterDeg==='dry'?s.st.dry:!s.st.dry&&s.st.deg===filterDeg)));
+}
+function render(){
+  if(mode==='dam')return renderDams();
+  const v=visible();
+  markers.forEach(m=>map.removeLayer(m));markers.clear();
+  // draw higher flood degrees last so they sit on top
+  v.slice().sort((a,b)=>(a.st.deg-b.st.deg)).forEach(s=>{
+    const m=L.circleMarker([s.lat,s.lon],{radius:s.st.deg>=1?12:8,weight:s===sel?4:2.5,color:s===sel?'#000':'#fff',fillColor:color(s.st),fillOpacity:1})
+      .addTo(map).bindTooltip(`${s.name} (${s.river})`).on('click',()=>open(s,false));
+    markers.set(s.id,m);
+  });
+  $('list').innerHTML=v.map(s=>`<div class="row ${s===sel?'sel':''}" data-id="${s.id}">
+    <span class="dot" style="background:${color(s.st)}"></span>
+    <div class="n"><b>${esc(s.name)}</b><span>${esc(s.river)}</span></div>
+    <div class="v">${s.st.h!=null?fmt(s.st.h)+' cm':''}<small>${s.st.q!=null?fmt(s.st.q,2)+' m³/s':''}</small></div></div>`).join('')||'<div class="row">Nic nenalezeno</div>';
+}
+
+function chart(s,key,hours=48){
+  const a=s[key],th=key=='H'?s.h:s.q,dry=key=='H'?s.dryH:s.dryQ;
+  if(!a.length)return'<p class="sub" style="padding:0 16px">Pro tuto veličinu nejsou data.</p>';
+  const t1=a[a.length-1][0],p=a.filter(x=>x[0]>=t1-hours*3600),t0=p[0][0];
+  const W=440,H=220,m={l:44,r:10,t:10,b:24};
+  const vals=p.map(x=>x[1]);let lo=Math.min(...vals),hi=Math.max(...vals);
+  // pull the next threshold into view when the river is close to it
+  const nxt=th.find(t=>t!=null&&t>hi);if(nxt!=null&&nxt-hi<(hi-lo+1)*3)hi=nxt;
+  const pad=(hi-lo||1)*.12;lo-=pad;hi+=pad;
+  const x=t=>m.l+(t-t0)/(t1-t0)*(W-m.l-m.r),y=v=>H-m.b-(v-lo)/(hi-lo)*(H-m.t-m.b);
+  let g='';
+  const ticks=4;for(let i=0;i<=ticks;i++){const v=lo+(hi-lo)*i/ticks;g+=`<line x1="${m.l}" x2="${W-m.r}" y1="${y(v)}" y2="${y(v)}" stroke="${css('--line')}"/><text x="${m.l-6}" y="${y(v)+4}" text-anchor="end">${fmt(v,hi-lo<10?1:0)}</text>`}
+  th.forEach((t,i)=>{if(t!=null&&t>lo&&t<hi)g+=`<line x1="${m.l}" x2="${W-m.r}" y1="${y(t)}" y2="${y(t)}" stroke="${css(COL[i+1])}" stroke-dasharray="4 3"/><text x="${W-m.r}" y="${y(t)-3}" text-anchor="end" style="fill:${css(COL[i+1])}">${SHORT[i+1]} ${fmt(t,key=='Q'?1:0)}</text>`});
+  if(dry!=null&&dry>lo&&dry<hi)g+=`<line x1="${m.l}" x2="${W-m.r}" y1="${y(dry)}" y2="${y(dry)}" stroke="${css('--dry')}" stroke-dasharray="2 3"/><text x="${W-m.r}" y="${y(dry)-3}" text-anchor="end">nízký stav</text>`;
+  for(let k=0;k<=4;k++){const t=t0+(t1-t0)*k/4;g+=`<text x="${x(t)}" y="${H-6}" text-anchor="${k==0?'start':k==4?'end':'middle'}">${fdt(t)}</text>`}
+  const d=p.map((q,i)=>(i?'L':'M')+x(q[0]).toFixed(1)+' '+y(q[1]).toFixed(1)).join('');
+  const lp=p[p.length-1];
+  return`<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Graf za posledních ${hours} hodin">${g}
+   <path d="${d}" fill="none" stroke="${css('--accent')}" stroke-width="2" stroke-linejoin="round"/>
+   <circle cx="${x(lp[0])}" cy="${y(lp[1])}" r="4" fill="${css('--accent')}"/></svg>`;
+}
+
+function open(s,pan=true){
+  sel=s;history.replaceState(null,'','#'+s.id);if(!s[metric].length)metric=s.H.length?'H':'Q';
+  const st=s.st,c=color(st),el=$('detail');
+  const tr=trend(s[metric]),u=metric=='H'?'cm':'m³/s',d=metric=='H'?0:2;
+  const a=s[metric],vs=a.filter(x=>x[0]>=a[a.length-1][0]-48*3600).map(x=>x[1]); // same 48 h window as the chart
+  const label=st.dry?'Nízký stav':DEG[Math.max(st.deg,0)];
+  const th=(metric=='H'?s.h:s.q);
+  el.innerHTML=`<div class="dh"><div><h2>${esc(s.name)}</h2><p>${esc(s.river)} · ${esc(s.id)}</p></div><button class="x" aria-label="Zavřít">×</button></div>
+   <div class="big"><b>${st.h!=null?fmt(st.h)+' <small>cm</small>':'–'}</b><b>${st.q!=null?fmt(st.q,2)+' <small>m³/s</small>':''}</b>
+    ${st.deg>=0?`<span class="badge" style="background:${c}">${label}</span>`:''}</div>
+   <div class="big" style="padding-bottom:10px"><span>${a.length?'Naměřeno '+fdt(a[a.length-1][0]):''}${tr!=null?` · za poslední hodinu ${tr>0?'↑ +':tr<0?'↓ ':'→ '}${fmt(tr,d)} ${u}`:''}</span></div>
+   <div class="tabs">${s.H.length?`<button class="chip" data-m="H" aria-pressed="${metric=='H'}">Vodní stav</button>`:''}${s.Q.length?`<button class="chip" data-m="Q" aria-pressed="${metric=='Q'}">Průtok</button>`:''}</div>
+   <div id="chart">${chart(s,metric)}</div>
+   <div class="stats"><div class="stat"><span>Min (48 h)</span>${a.length?fmt(Math.min(...vs),d)+' '+u:'–'}</div><div class="stat"><span>Max (48 h)</span>${a.length?fmt(Math.max(...vs),d)+' '+u:'–'}</div><div class="stat"><span>Měření (48 h)</span>${vs.length}</div></div>
+   <div class="thr">${th.map((t,i)=>t!=null?`<div><span class="dot" style="background:${css(COL[i+1])}"></span>${DEG[i+1]}: <b>${fmt(t,d)} ${u}</b></div>`:'').join('')}</div>`;
+  el.classList.add('open');
+  el.querySelector('.x').onclick=()=>{sel=null;history.replaceState(null,'',location.pathname);el.classList.remove('open');render()};
+  el.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{metric=b.dataset.m;open(s,false)});
+  if(pan)map.flyTo([s.lat,s.lon],Math.max(map.getZoom(),10),{duration:.6});
+  render();
+}
+
+function legend(){
+  if(mode==='dam'){
+    $('legend').innerHTML='<b>Zaplnění zásobního prostoru</b>'+[[95,'≥ 95 %'],[60,'60–95 %'],[30,'30–60 %'],[0,'< 30 %']].map(([f,l])=>`<div>${tank(f===0?10:f)}${l}</div>`).join('')+`<div><span class="ring-key"></span>Poloha přibližná (${visibleDams().filter(d=>d.approx).length})</div><div class="sub">${visibleDams().length} nádrží</div>`;
+    return;
+  }
+  const p=$('pov').value,rv=$('river').value,base=S.filter(s=>(!p||s.pov===p)&&(!rv||s.river===rv));
+  const n=k=>base.filter(s=>k==='dry'?s.st.dry:!s.st.dry&&s.st.deg===k).length;
+  const items=[[0,'Normální'],[1,SHORT[1]],[2,SHORT[2]],[3,SHORT[3]],[4,SHORT[4]],['dry','Nízký stav']];
+  $('legend').innerHTML=items.map(([k,l])=>`<div><span class="dot" style="background:${k==='dry'?css('--dry'):css(COL[k])}"></span>${l} (${n(k)})</div>`).join('');
+  $('chips').innerHTML=[['Vše',null],...items.filter(([k])=>n(k)>0).map(([k,l])=>[l+' '+n(k),k])]
+    .map(([l,k])=>`<button class="chip" data-k="${k}" aria-pressed="${filterDeg===k}">${l}</button>`).join('');
+  $('chips').querySelectorAll('.chip').forEach(b=>b.onclick=()=>{const k=b.dataset.k;filterDeg=k=='null'?null:k=='dry'?'dry':+k;legend();render()});
+}
+
+// ---- Reservoirs (all five povodí, scraped from their portals by the server) ----
+const tankCol=f=>f==null?'var(--na)':f>=95?'#0b4fa8':f>=60?'#1a6fd4':f>=30?'#3f93e6':'#7ab6f2';
+const tank=(f,cls='')=>`<span class="tank ${cls}" style="--f:${f??0}%;--tank:${tankCol(f)}"></span>`;
+function visibleDams(){const q=$('q').value.trim().toLowerCase(),p=$('pov').value;return D.filter(d=>(!p||d.pov===p)&&(!q||(d.name+' '+d.river).toLowerCase().includes(q)))}
+function renderDams(){
+  const v=visibleDams();
+  markers.forEach(m=>map.removeLayer(m));markers.clear();
+  v.forEach(d=>{
+    const icon=L.divIcon({className:'dam-icon'+(d===selD?' sel':''),html:d.approx?`<span class="ring">${tank(d.fillPct)}</span>`:tank(d.fillPct),iconSize:d.approx?[36,36]:[20,26],iconAnchor:d.approx?[18,18]:[10,13]});
+    const m=L.marker([d.lat,d.lon],{icon}).addTo(map).bindTooltip(`${d.name} – ${d.fillPct==null?'–':fmt(d.fillPct,0)} %${d.approx?' (poloha přibližná)':''}`).on('click',()=>openDam(d,false));
+    markers.set('d'+d.key,m);
+  });
+  $('list').innerHTML=v.map(d=>`<div class="row ${d===selD?'sel':''}" data-id="${d.key}">${tank(d.fillPct)}
+    <div class="n"><b>${esc(d.name)}</b><span>${esc(d.river)}</span></div>
+    <div class="v">${d.fillPct==null?'–':fmt(d.fillPct,0)+' %'}<small>${fmt(d.level,2)} m n. m.</small></div></div>`).join('')||'<div class="row">Nic nenalezeno</div>';
+}
+// Flow below the Vltava cascade, from the ČHMÚ river stations (only for dams whose own outflow is not published)
+function refGauges(d){
+  if(!d.refGauges)return'';
+  const g=d.refGauges.map(id=>S.find(s=>s.id===id)).filter(s=>s&&s.Q.length);
+  if(!g.length)return'<div class="thr"><b>Průtok pod kaskádou (ČHMÚ)</b><div class="sub">Data stanic se ještě načítají…</div></div>';
+  const lines=g.map(s=>{const p=s.Q[s.Q.length-1];return`<div><span class="dot" style="background:var(--accent)"></span>${esc(s.name)}: <b>${fmt(p[1],1)} m³/s</b> · ${fdt(p[0])} <button class="chip" data-st="${s.id}">Zobrazit stanici</button></div>`}).join('');
+  return`<div class="thr"><b>Průtok pod kaskádou (ČHMÚ)</b>${lines}</div>
+   <div id="chart">${chart(g[0],'Q')}</div>
+   <div class="sub" style="padding:0 16px 8px">Graf: ${esc(g[0].name)}, průtok za posledních 48 h.</div>
+   <div class="note">Přímo pod Orlíkem, Kamýkem, Slapy ani Štěchovicemi ČHMÚ nic neměří. Nejbližší stanice leží až pod celou kaskádou, takže průtok zahrnuje i přítoky pod přehradami (např. Sázavu a Kocábu) a není odtokem této jedné nádrže. Slouží jako orientace, ne jako náhrada chybějící hodnoty.</div>`;
+}
+function openDam(d,pan=true){
+  selD=d;const el=$('detail');
+  const row=(l,v)=>`<div class="stat"><span>${l}</span>${v}</div>`;
+  const u=(v,unit,dg=2)=>v==null?'–':`${fmt(v,dg)} ${unit}`;
+  el.innerHTML=`<div class="dh"><div><h2>${esc(d.name)}</h2><p>Vodní nádrž · ${esc(d.river)} · ${esc(d.pov)}</p></div><button class="x" aria-label="Zavřít">×</button></div>
+   <div class="big"><b>${d.fillPct==null?'–':fmt(d.fillPct,1)} <small>% zásobního prostoru</small></b></div>
+   <div class="gauge" role="img" aria-label="Zaplnění ${fmt(d.fillPct,1)} %"><i style="width:${Math.min(100,d.fillPct||0)}%"></i></div>
+   <div class="big" style="padding-top:6px"><span>Naměřeno ${esc(d.time)}</span></div>
+   <div class="kv">
+    ${row('Hladina',u(d.level,'m n. m.'))}${row('Objem v nádrži',u(d.volume,'mil. m³'))}
+    ${row('Přítok',u(d.inflow,'m³/s'))}${row('Odtok',u(d.outflow,'m³/s'))}
+    ${row('Zaplněný zásobní prostor',u(d.storedMil,'mil. m³'))}${row('Volný zásobní prostor',u(d.freeMil,'mil. m³'))}
+    ${row('Srážky (24 h)',u(d.precip,'mm',1))}${row('Teplota vzduchu',u(d.temp,'°C',1))}
+   </div>
+   <div class="thr"><b>Průměrný a N-leté odtoky</b>
+    <div>Qa (roční průměr): <b>${u(d.qa,'m³/s')}</b></div>
+    <div style="display:block">Q1: <b>${u(d.q1,'m³/s')}</b> · Q5: <b>${u(d.q5,'m³/s')}</b> · Q20: <b>${u(d.q20,'m³/s')}</b> · Q100: <b>${u(d.q100,'m³/s')}</b></div></div>
+   ${refGauges(d)}
+   ${(d.warnings||[]).map(w=>`<div class="note warn">⚠ ${esc(w)}</div>`).join('')}
+   ${d.approx?'<div class="note warn">Poloha nádrže je přibližná (střed obce nebo blízký objekt), skutečná hráz může být o několik km jinde.</div>':''}
+   ${d.note?`<div class="note">${esc(d.note)}</div>`:''}`;
+  el.classList.add('open');
+  el.querySelectorAll('[data-st]').forEach(b=>b.onclick=()=>{const s=S.find(x=>x.id===b.dataset.st);if(s){setMode('st');open(s)}});
+  el.querySelector('.x').onclick=()=>{selD=null;el.classList.remove('open');renderDams()};
+  if(pan)map.flyTo([d.lat,d.lon],Math.max(map.getZoom(),11),{duration:.6});
+  renderDams();
+}
+async function loadDams(){
+  try{
+    const r=await fetch('/api/reservoirs');if(!r.ok)throw new Error(r.status);
+    D=(await r.json()).reservoirs;
+    if(selD)selD=D.find(x=>x.key===selD.key)||null;
+    if(mode==='dam'){renderDams();if(selD)openDam(selD,false);legend()}
+  }catch(e){D=[];if(mode==='dam')$('updated').textContent='Data nádrží se nepodařilo načíst: '+e.message}
+}
+function setMode(m){
+  mode=m;document.body.classList.toggle('dams',m==='dam');
+  document.querySelectorAll('#modes .chip').forEach(b=>b.setAttribute('aria-pressed',b.dataset.mode===m));
+  $('q').placeholder=m==='dam'?'Hledat nádrž nebo tok…':'Hledat stanici nebo tok…';
+  $('detail').classList.remove('open');sel=null;selD=null;history.replaceState(null,'',location.pathname);
+  legend();render();
+  const pts=(m==='dam'?D:S).map(x=>[x.lat,x.lon]);
+  if(m==='dam'&&pts.length)map.fitBounds(L.latLngBounds(pts),{padding:[50,50],maxZoom:10});
+}
+document.querySelectorAll('#modes .chip').forEach(b=>b.onclick=()=>setMode(b.dataset.mode));
+
+$('list').onclick=e=>{const r=e.target.closest('.row');if(r&&r.dataset.id){if(mode==='dam')openDam(D.find(d=>d.key===r.dataset.id));else open(S.find(s=>s.id===r.dataset.id));document.body.classList.remove('showlist');$('bar').textContent='Zobrazit seznam'}};
+function riverOptions(){
+  const p=$('pov').value,cur=$('river').value;
+  const rivers=[...new Set(S.filter(s=>!p||s.pov===p).map(s=>s.river))].sort((a,b)=>a.localeCompare(b,'cs'));
+  $('river').innerHTML='<option value="">Všechny toky</option>'+rivers.map(x=>`<option>${esc(x)}</option>`).join('');
+  if(rivers.includes(cur))$('river').value=cur;
+}
+$('q').oninput=render;$('river').onchange=()=>{legend();render()};
+$('pov').onchange=()=>{riverOptions();legend();const v=mode==='dam'?visibleDams():visible();render();
+  if(v.length)map.fitBounds(L.latLngBounds(v.map(s=>[s.lat,s.lon])),{padding:[40,40],maxZoom:11})};
+$('bar').onclick=()=>{const on=document.body.classList.toggle('showlist');$('bar').textContent=on?'Skrýt seznam':'Zobrazit seznam'};
+
+async function load(){
+  try{
+    const r=await fetch('/api/stations');if(!r.ok)throw new Error(r.status);
+    const d=await r.json();S=d.stations;S.forEach(s=>s.st=status(s));
+    $('updated').textContent='Aktualizováno '+new Date(d.updated).toLocaleString('cs-CZ')+' · '+S.length+' stanic · zdroj ČHMÚ';
+    const povs=[...new Set(S.map(s=>s.pov))].sort((a,b)=>a.localeCompare(b,'cs'));
+    const cp=$('pov').value;
+    $('pov').innerHTML='<option value="">Všechna povodí</option>'+povs.map(x=>`<option value="${esc(x)}">${esc(x)} (${S.filter(s=>s.pov===x).length})</option>`).join('');
+    $('pov').value=cp;riverOptions();
+    legend();
+    if(sel)sel=S.find(s=>s.id===sel.id)||null;
+    render();
+    if(mode==='dam'&&selD)openDam(selD,false);
+    else if(sel)open(sel,false);
+    else if(location.hash.length>1){const s=S.find(x=>x.id===location.hash.slice(1));if(s)open(s)}
+  }catch(e){$('updated').textContent='Data se nepodařilo načíst: '+e.message}
+}
+load().then(()=>{const p=new URLSearchParams(location.search).get('pov');if(p){$('pov').value=p;$('pov').onchange()}});setInterval(load,10*60*1000);
+loadDams().then(()=>{const u=new URLSearchParams(location.search);if(u.get('mode')==='dam'){setMode('dam');const d=D.find(x=>x.key===u.get('id'));if(d)openDam(d)}});setInterval(loadDams,10*60*1000);
+</script>
+</body>
+</html>

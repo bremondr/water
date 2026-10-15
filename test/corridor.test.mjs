@@ -44,10 +44,11 @@ test('buildLevelLut: continuous without steps, flat pools and a drop at the weir
   const lut = buildLevelLut({ points, sMax: 20000 });
   assert.equal(lut[0], 1000); assert.equal(lut[1000], 1050); assert.equal(lut[2000], 1100);   // dm, one unit = 10 m
   const stepped = buildLevelLut({ points, sMax: 20000, weirs: [{ s: 10000 }], stepWeirs: true });
-  assert.equal(stepped[100], stepped[900], 'flat inside the lower pool');
-  assert.equal(stepped[1100], stepped[1900], 'flat inside the upper pool');
-  assert.ok(stepped[1100] > stepped[900], 'the upper pool is higher: a step at the weir');
-  assert.ok(stepped[999] < stepped[1000] || stepped[1000] === stepped[1900], 'the step sits at the weir');
+  assert.equal(stepped[100], stepped[850], 'flat inside the lower pool');
+  assert.equal(stepped[1150], stepped[1900], 'flat inside the upper pool');
+  assert.ok(stepped[1150] > stepped[850], 'the upper pool is higher: a drop at the weir');
+  assert.ok(stepped[950] > stepped[850] && stepped[950] < stepped[1150], 'the drop is a ramp, not a straight cut');
+  assert.ok(Math.abs(stepped[1000] - (stepped[850] + stepped[1150]) / 2) <= 1, 'half way down at the weir');
 });
 
 test('buildLevelLut: a gauge inside a pool sets that pool level', () => {

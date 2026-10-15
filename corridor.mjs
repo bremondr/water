@@ -76,6 +76,7 @@ export function interpolateLevel(points, s, extrapolate = 'slope') {
 // Level lookup table in decimetres indexed by s in S_UNIT. With `stepWeirs` the surface is flat inside each pool between two weirs (the
 // level of a gauge in that pool, otherwise the interpolated level at the middle of the pool) and drops at the weirs; without it the surface
 // is continuous, which is what a flood with open weirs looks like.
+const WEIR_RAMP = 1000;                                    // m either side of a weir
 export function buildLevelLut({ points, sMax, weirs = [], stepWeirs = false, extrapolate = 'slope' }) {
   const units = Math.ceil(sMax / S_UNIT) + 1, lut = new Int32Array(units);
   const w = weirs.map(x => x.s).sort((a, b) => a - b);
@@ -91,7 +92,13 @@ export function buildLevelLut({ points, sMax, weirs = [], stepWeirs = false, ext
   let k = 0;
   for (let u = 0; u < units; u++) {
     const s = u * S_UNIT;
-    if (stepWeirs) { while (k < w.length && s >= w[k]) k++; lut[u] = Math.round(poolLevels[k] * 10); }
+    if (stepWeirs) {                                       // pools are flat, the drop at a weir is a ramp of 2 * WEIR_RAMP so that it is not a straight cut across the floodplain
+      while (k < w.length && s >= w[k]) k++;
+      let lv = poolLevels[k];
+      if (k > 0 && s < w[k - 1] + WEIR_RAMP) lv = poolLevels[k] + (poolLevels[k - 1] - poolLevels[k]) * (0.5 - (s - w[k - 1]) / (2 * WEIR_RAMP));
+      else if (k < w.length && s >= w[k] - WEIR_RAMP) lv = poolLevels[k] + (poolLevels[k + 1] - poolLevels[k]) * (0.5 - (w[k] - s) / (2 * WEIR_RAMP));
+      lut[u] = Math.round(lv * 10);
+    }
     else lut[u] = Math.round(interpolateLevel(points, s, extrapolate) * 10);
   }
   return lut;

@@ -119,13 +119,14 @@ export function createCorridorService({ dir, getStations }) {
         if (rx >= 0 && rx < m.W) grid[py * N + px] = c.zones[ry * m.W + rx];
       }
     }
-    const rgba = new Uint8ClampedArray(256 * 256 * 4);
+    const rgba = new Uint8ClampedArray(256 * 256 * 4), thin = z < 13;
     for (const bit of bits) {
       const col = ZONE_COLORS[bit]; if (!col) continue;
       for (let py = 0; py < 256; py++) for (let px = 0; px < 256; px++) {
         const g = (py + B) * N + px + B;
         if (!(grid[g] & bit)) continue;
-        if ((grid[g - 2] & bit) && (grid[g + 2] & bit) && (grid[g - 2 * N] & bit) && (grid[g + 2 * N] & bit) && (grid[g - 1] & bit) && (grid[g + 1] & bit) && (grid[g - N] & bit) && (grid[g + N] & bit)) continue;
+        // 2 px outline when zoomed in, 1 px when zoomed out: a thick outline would hide a narrow river (e.g. the canyon below Litoměřice)
+        if ((thin || ((grid[g - 2] & bit) && (grid[g + 2] & bit) && (grid[g - 2 * N] & bit) && (grid[g + 2 * N] & bit))) && (grid[g - 1] & bit) && (grid[g + 1] & bit) && (grid[g - N] & bit) && (grid[g + N] & bit)) continue;
         const o = (py * 256 + px) * 4; rgba[o] = col[0]; rgba[o + 1] = col[1]; rgba[o + 2] = col[2]; rgba[o + 3] = 255;
       }
     }

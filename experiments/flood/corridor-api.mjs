@@ -1,13 +1,13 @@
 // Server side of the corridor flood experiment: holds the corridor terrain in memory, computes a flood for a scenario (a water surface
-// built from the levels of the gauges along the river) and serves the result as Web Mercator map tiles, so the browser never has to
-// load the ~150 MB of rasters.
-//   GET /experiments/flood/api/corridor                    gauges, weirs, events, bounds, zone area
+// built from the levels of the gauges along the river and its tributaries) and serves the result as Web Mercator map tiles, so the
+// browser never has to load the hundreds of MB of rasters.
+//   GET /experiments/flood/api/corridor                    reaches, gauges, weirs, events, bounds, zone area
 //   GET /experiments/flood/api/scenario?source=now|2002-08|...&offset=<cm>&extrap=slope|flat&weirs=0|1
 //   GET /experiments/flood/tiles/<scenarioId>/<z>/<x>/<y>.png        flood depth
 //   GET /experiments/flood/zonetiles/<z>/<x>/<y>.png?bits=4,16      outlines of official zones
 import { readFileSync, existsSync } from 'node:fs';
 import { createHash } from 'node:crypto';
-import { buildLevelLut, floodCorridor, findSeeds, fromPixel, S_UNIT, NO_S, NODATA } from '../../corridor.mjs';
+import { scenarioLuts, floodCorridor, findSeeds, fromPixel, S_UNIT, NO_S } from '../../corridor.mjs';
 import { encodePng } from '../../png.mjs';
 
 const R = 6378137, WORLD = 2 * Math.PI * R;
@@ -24,21 +24,22 @@ for (let d = 0; d <= 60; d++) {
 
 export function createCorridorService({ dir, getStations }) {
   let C = null;
-  const scenarios = new Map();           // id -> { mask, lut, info }
+  const scenarios = new Map();           // id -> { mask, lut, offsets, info }
 
   function load() {
     if (C) return C;
     if (!existsSync(new URL('manifest.json', dir))) return null;
     const m = JSON.parse(readFileSync(new URL('manifest.json', dir)));
     const u16 = f => { const b = readFileSync(new URL(f, dir)); return new Uint16Array(b.buffer, b.byteOffset, b.byteLength / 2); };
-    const z = u16('z.bin'), s = u16('s.bin'), zb = readFileSync(new URL('zones.bin', dir)), zones = new Uint8Array(zb.buffer, zb.byteOffset, zb.byteLength);
+    const z = u16('z.bin'), s = u16('s.bin'), rb = readFileSync(new URL('r.bin', dir)), r = new Uint8Array(rb.buffer, rb.byteOffset, rb.byteLength);
+    const zb = readFileSync(new URL('zones.bin', dir)), zones = new Uint8Array(zb.buffer, zb.byteOffset, zb.byteLength);
     let n = 0; for (let i = 0; i < s.length; i++) if (s[i] !== NO_S) n++;
     const idx = new Int32Array(n); n = 0;
     for (let i = 0; i < s.length; i++) if (s[i] !== NO_S) idx[n++] = i; else zones[i] = 0;       // zones only inside the corridor
     const cell = m.groundPixel * m.groundPixel / 1e6;
     const corners = { nw: fromPixel(m, 0, 0), se: fromPixel(m, m.W, m.H) };
     const zoneArea = {}; for (const [name, bit] of Object.entries(m.zones.bits)) { let c = 0; for (let k = 0; k < idx.length; k++) if (zones[idx[k]] & bit) c++; zoneArea[name] = +(c * cell).toFixed(2); }
-    C = { m, z, s, zones, idx, cell, zoneArea, bounds: { west: corners.nw[0], north: corners.nw[1], east: corners.se[0], south: corners.se[1] } };
+    C = { m, z, s, r, zones, idx, cell, zoneArea, bounds: { west: corners.nw[0], north: corners.nw[1], east: corners.se[0], south: corners.se[1] } };
     return C;
   }
 
@@ -57,39 +58,40 @@ export function createCorridorService({ dir, getStations }) {
     const source = q.get('source') || 'now', offset = +(q.get('offset') || 0) || 0, extrap = q.get('extrap') === 'flat' ? 'flat' : 'slope', steps = q.get('weirs') === '1';
     const peaks = source === 'now' ? await nowLevels(c) : c.m.events[source];
     if (!peaks) return { error: `unknown source ${source}` };
-    const points = c.m.gauges.filter(g => peaks[g.id]).map(g => ({ id: g.id, name: g.name, s: g.s, cm: peaks[g.id].cm + offset, level: g.zero + (peaks[g.id].cm + offset) / 100, dt: peaks[g.id].dt }));
-    if (points.length < 1) return { error: 'no gauge has data for this source' };
+    let luts;
+    try { luts = scenarioLuts(c.m, peaks, { offset, extrapolate: extrap, stepWeirs: steps }); } catch (e) { return { error: e.message }; }
+    const { lut, offsets, points } = luts;
     const id = createHash('sha1').update(JSON.stringify([source, offset, extrap, steps, points.map(p => [p.id, p.cm])])).digest('hex').slice(0, 12);
     if (scenarios.has(id)) { const sc = scenarios.get(id); scenarios.delete(id); scenarios.set(id, sc); return sc.info; }
-    const t0 = performance.now(), sMax = c.m.length + 1000;
-    const weirs = c.m.weirs.filter(w => !w.live);
-    const lut = buildLevelLut({ points, sMax, weirs, stepWeirs: steps, extrapolate: extrap });
-    const seeds = findSeeds(c.z, c.s, c.m.W, c.m.H, lut, c.m.centerline, Math.round(100 / c.m.groundPixel), Math.round(160 / c.m.groundPixel));
-    const r = floodCorridor(c.z, c.s, c.m.W, c.m.H, lut, seeds);
+    const t0 = performance.now(), { W, H, groundPixel: gp } = c.m;
+    const opts = { r: c.r, offsets };
+    const seeds = new Set();
+    c.m.reaches.forEach(reach => { for (const i of findSeeds(c.z, c.s, W, H, lut, reach.centerline, Math.round(100 / gp), Math.round(160 / gp), opts)) seeds.add(i); });
+    const res = floodCorridor(c.z, c.s, W, H, lut, [...seeds], opts);
     // agreement with each official zone, over the corridor cells
     const bits = c.m.zones.bits, acc = Object.fromEntries(Object.keys(bits).map(k => [k, [0, 0]]));       // [zone cells, both]
     for (let k = 0; k < c.idx.length; k++) {
       const i = c.idx[k], zb = c.zones[i];
       if (!zb) continue;
-      const f = r.mask[i];
+      const f = res.mask[i];
       for (const name in bits) if (zb & bits[name]) { acc[name][0]++; if (f) acc[name][1]++; }
     }
     const zones = {};
     for (const name in bits) {
-      const [zc, both] = acc[name], union = r.count + zc - both;
-      zones[name] = { zoneKm2: +(zc * c.cell).toFixed(1), inZone: r.count ? both / r.count : null, covered: zc ? both / zc : null, iou: union && zc ? both / union : null };
+      const [zc, both] = acc[name], union = res.count + zc - both;
+      zones[name] = { zoneKm2: +(zc * c.cell).toFixed(1), inZone: res.count ? both / res.count : null, covered: zc ? both / zc : null, iou: union && zc ? both / union : null };
     }
-    const profile = []; for (let sm = 0; sm <= sMax; sm += 500) profile.push([sm, lut[Math.min(lut.length - 1, Math.round(sm / S_UNIT))] / 10]);
+    const profiles = {};
+    c.m.reaches.forEach((reach, k) => { const len = reach.length + 1000, arr = []; for (let sm = 0; sm <= len; sm += 500) arr.push([sm, lut[offsets[k] + Math.min(Math.ceil(len / S_UNIT), Math.round(sm / S_UNIT))] / 10]); profiles[reach.id] = arr; });
     const info = {
-      id, source, offset, extrap, weirsStepped: steps, points, profile,
-      areaKm2: +(r.count * c.cell).toFixed(2), maxDepthM: +(r.maxDepthDm / 10).toFixed(1), seeds: seeds.length, ms: Math.round(performance.now() - t0), zones,
+      id, source, offset, extrap, weirsStepped: steps, points: points.map(p => ({ ...p, reachId: c.m.reaches[p.reach].id })), profiles,
+      areaKm2: +(res.count * c.cell).toFixed(2), maxDepthM: +(res.maxDepthDm / 10).toFixed(1), seeds: seeds.size, ms: Math.round(performance.now() - t0), zones,
     };
-    scenarios.set(id, { mask: r.mask, lut, info });
-    while (scenarios.size > 4) scenarios.delete(scenarios.keys().next().value);
+    scenarios.set(id, { mask: res.mask, lut, offsets, info });
+    while (scenarios.size > 3) scenarios.delete(scenarios.keys().next().value);
     return info;
   }
 
-  // tile helpers: raster pixel of every tile pixel
   const tileBox = (z, x, y) => { const size = WORLD / 2 ** z; return { mx0: -WORLD / 2 + x * size, myTop: WORLD / 2 - y * size, size }; };
 
   function depthTile(c, sc, z, x, y) {
@@ -102,7 +104,7 @@ export function createCorridorService({ dir, getStations }) {
         if (rx < 0 || rx >= m.W) continue;
         const i = ry * m.W + rx;
         if (!sc.mask[i]) continue;
-        const d = Math.min(60, Math.max(0, sc.lut[c.s[i]] - c.z[i])) * 4, o = (py * 256 + px) * 4;
+        const d = Math.min(60, Math.max(0, sc.lut[sc.offsets[c.r[i]] + c.s[i]] - c.z[i])) * 4, o = (py * 256 + px) * 4;
         rgba[o] = DEPTH[d]; rgba[o + 1] = DEPTH[d + 1]; rgba[o + 2] = DEPTH[d + 2]; rgba[o + 3] = DEPTH[d + 3];
       }
     }
@@ -144,8 +146,9 @@ export function createCorridorService({ dir, getStations }) {
         const now = await nowLevels(c);
         json(res, 200, {
           river: c.m.river, lengthM: c.m.length, groundPixel: c.m.groundPixel, bounds: c.bounds, zoneKm2: c.zoneArea, zoneBits: c.m.zones.bits, fetched: c.m.fetched,
-          gauges: c.m.gauges.map(g => ({ id: g.id, name: g.name, rkm: g.rkm, s: g.s, zero: g.zero, spaH: g.spaH, lat: g.lat, lon: g.lon, now: now[g.id] ?? null })),
-          weirs: c.m.weirs, events: Object.fromEntries(Object.entries(c.m.events).map(([k, v]) => [k, v])),
+          reaches: c.m.reaches.map(r => ({ id: r.id, name: r.name, length: r.length, mouth: r.mouth })),
+          gauges: c.m.gauges.map(g => ({ id: g.id, name: g.name, rkm: g.rkm, reach: g.reach, s: g.s, zero: g.zero, spaH: g.spaH, lat: g.lat, lon: g.lon, now: now[g.id] ?? null })),
+          weirs: c.m.weirs, events: c.m.events,
         });
         return true;
       }

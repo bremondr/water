@@ -74,9 +74,9 @@ th{color:var(--muted);font-weight:600}
   <div class="ramp-l"><span>0 m</span><span>1 m</span><span>3 m</span><span>6 m a víc</span></div>
 
   <h2>Použité hladiny</h2>
-  <table id="gauges"><thead><tr><th>Stanice</th><th>km od konce</th><th>stav</th><th>m n. m.</th></tr></thead><tbody></tbody></table>
+  <table id="gauges"><thead><tr><th>Stanice</th><th>km od ústí</th><th>stav</th><th>m n. m.</th></tr></thead><tbody></tbody></table>
   <svg id="chart" viewBox="0 0 380 150" role="img" aria-label="Hladina vody podél toku"></svg>
-  <div class="sub">Hladina vody podél toku (m n. m.) podle vzdálenosti proti proudu. Body jsou stanice, svislé čáry jezy.</div>
+  <div class="sub">Hladina vody podél Labe (m n. m.) podle vzdálenosti proti proudu. Body jsou stanice, svislé čáry jezy. Přítoky začínají na hladině Labe v ústí.</div>
 
   <h2>Oficiální záplavová území (VÚV)</h2>
   <div class="sub">Okraje zón; statické návrhové mapy.</div>
@@ -130,14 +130,15 @@ for (const bit of (q.get('zones') || '').split(',').filter(Boolean)) { const box
 
 function drawChart(sc) {
   const svg = $('chart'), W = 380, H = 150, m = { l: 38, r: 8, t: 8, b: 22 }, L0 = corridor.lengthM;
-  const lv = sc.profile.map(p => p[1]), lo = Math.floor(Math.min(...lv, ...sc.points.map(p => p.level)) - 1), hi = Math.ceil(Math.max(...lv, ...sc.points.map(p => p.level)) + 1);
+  const prof = sc.profiles.labe, mainPts = sc.points.filter(p => p.reachId === 'labe');
+  const lv = prof.map(p => p[1]), lo = Math.floor(Math.min(...lv, ...mainPts.map(p => p.level)) - 1), hi = Math.ceil(Math.max(...lv, ...mainPts.map(p => p.level)) + 1);
   const x = s => m.l + (L0 - s) / L0 * (W - m.l - m.r);          // downstream end on the right, upstream on the left
   const y = v => H - m.b - (v - lo) / (hi - lo) * (H - m.t - m.b);
   let g = '';
   for (let i = 0; i <= 4; i++) { const v = lo + (hi - lo) * i / 4; g += `<line x1="${m.l}" x2="${W - m.r}" y1="${y(v)}" y2="${y(v)}" stroke="currentColor" stroke-opacity=".12"/><text x="${m.l - 4}" y="${y(v) + 3}" text-anchor="end">${fmt(v, 0)}</text>`; }
   for (const w of corridor.weirs) if (w.s >= 0 && w.s <= L0) g += `<line x1="${x(w.s)}" x2="${x(w.s)}" y1="${m.t}" y2="${H - m.b}" stroke="#c2185b" stroke-opacity=".5" stroke-dasharray="2 3"/>`;
-  g += `<path d="${sc.profile.map((p, i) => (i ? 'L' : 'M') + x(p[0]).toFixed(1) + ' ' + y(p[1]).toFixed(1)).join('')}" fill="none" stroke="#1a6fd4" stroke-width="2"/>`;
-  for (const p of sc.points) g += `<circle cx="${x(p.s)}" cy="${y(p.level)}" r="4" fill="#1a6fd4" stroke="#fff"/><text x="${x(p.s)}" y="${y(p.level) - 7}" text-anchor="middle">${p.name.replace(' nad Labem', '')}</text>`;
+  g += `<path d="${prof.map((p, i) => (i ? 'L' : 'M') + x(p[0]).toFixed(1) + ' ' + y(p[1]).toFixed(1)).join('')}" fill="none" stroke="#1a6fd4" stroke-width="2"/>`;
+  for (const p of mainPts) g += `<circle cx="${x(p.s)}" cy="${y(p.level)}" r="4" fill="#1a6fd4" stroke="#fff"/><text x="${x(p.s)}" y="${y(p.level) - 7}" text-anchor="middle">${p.name.replace(' nad Labem', '')}</text>`;
   for (let km = 0; km <= L0 / 1000; km += 20) g += `<text x="${x(km * 1000)}" y="${H - 6}" text-anchor="middle">${km} km</text>`;
   svg.innerHTML = g;
 }
@@ -145,7 +146,7 @@ function drawChart(sc) {
 function show(sc) {
   info = sc;
   $('area').textContent = `${fmt(sc.areaKm2, 1)} km²`; $('depth').textContent = `${fmt(sc.maxDepthM, 1)} m`; $('ms').textContent = `${fmt(sc.ms)} ms`; $('seeds').textContent = fmt(sc.seeds);
-  $('gauges').querySelector('tbody').innerHTML = sc.points.map(p => `<tr><td>${p.name}</td><td>${fmt(p.s / 1000, 1)}</td><td>${fmt(p.cm)} cm</td><td>${fmt(p.level, 2)}</td></tr>`).join('');
+  $('gauges').querySelector('tbody').innerHTML = sc.points.map(p => `<tr><td>${p.name}${p.reachId === 'labe' ? '' : ' (' + corridor.reaches.find(x => x.id === p.reachId).name + ')'}</td><td>${fmt(p.s / 1000, 1)}</td><td>${fmt(p.cm)} cm</td><td>${fmt(p.level, 2)}</td></tr>`).join('');
   drawChart(sc);
   const names = { 4: 'Q100', 2: 'Q20', 1: 'Q5', 16: 'AktivniZony', 8: 'Q500' };
   $('cmp').querySelector('tbody').innerHTML = [...document.querySelectorAll('[data-zone]')].map(bx => {

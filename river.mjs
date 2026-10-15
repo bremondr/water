@@ -29,12 +29,17 @@ export function haversine(a, b) {
   return 2 * R * Math.asin(Math.sqrt(h));
 }
 
-// Pure. Pick reaches that cover [kmFrom, kmTo] (newest determination first, longest range wins ties) and chain them into one line
-// ordered from the upstream end to the downstream end. Each reach is oriented so that its kmK end comes first.
+// Pure. Pick reaches that cover [kmFrom, kmTo] and chain them into one line ordered from the upstream end to the downstream end. Reaches on
+// the digital network (numeric ZUID) are preferred over regional extras, longer ranges over short ones (fewer joints), newer over older.
+// The requested range is clipped to what the reaches offer at all (a river chain may end at the border a little before kmFrom).
 export function chainReaches(reaches, kmFrom, kmTo) {
-  const usable = reaches.filter(r => r.kmK - r.kmP > 5 && r.kmK > kmFrom && r.kmP < kmTo)
-    // numeric ZUIDs are the national determinations on the digital river network (preferred), the CZxxx_ ones are regional extras
-    .sort((a, b) => (/^\d+$/.test(b.zuid) - /^\d+$/.test(a.zuid)) || b.zuid.localeCompare(a.zuid, 'en', { numeric: true }) || (b.kmK - b.kmP) - (a.kmK - a.kmP));
+  const cand = reaches.filter(r => r.kmK - r.kmP > 5 && r.kmK > kmFrom && r.kmP < kmTo);
+  if (cand.length) {                                      // clip a small shortfall at either end (3 km), but not a real gap
+    const lo = Math.min(...cand.map(r => r.kmP)), hi = Math.max(...cand.map(r => r.kmK));
+    if (lo - kmFrom > 0 && lo - kmFrom <= 3) kmFrom = lo;
+    if (kmTo - hi > 0 && kmTo - hi <= 3) kmTo = hi;
+  }
+  const usable = cand.sort((a, b) => (/^\d+$/.test(b.zuid) - /^\d+$/.test(a.zuid)) || (b.kmK - b.kmP) - (a.kmK - a.kmP) || b.zuid.localeCompare(a.zuid, 'en', { numeric: true }));
   const chosen = [];
   let covered = [];                                       // list of [from, to] already covered
   const gapIn = (lo, hi) => {

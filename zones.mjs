@@ -54,15 +54,26 @@ export function rasterizeFeatures(features, toPixel, width, height, bit, out, { 
         }
       }
       if (!edges.length || ymax < 0 || ymin > height) continue;
+      // active edge table: edges sorted by their top y, only those crossing the current row are tested (a corridor-sized polygon has
+      // hundreds of thousands of edges and thousands of rows)
+      const n = edges.length / 4, top = new Float64Array(n), bot = new Float64Array(n), order = new Int32Array(n);
+      for (let e = 0; e < n; e++) { top[e] = Math.min(edges[4 * e + 1], edges[4 * e + 3]); bot[e] = Math.max(edges[4 * e + 1], edges[4 * e + 3]); order[e] = e; }
+      order.sort((i, j) => top[i] - top[j]);
+      let next = 0, active = [];
       const y0 = Math.max(0, Math.floor(ymin)), y1 = Math.min(height - 1, Math.ceil(ymax));
       for (let y = y0; y <= y1; y++) {
-        const yc = y + 0.5, xs = [];
-        for (let e = 0; e < edges.length; e += 4) {
-          const ea = edges[e + 1], eb = edges[e + 3];
+        const yc = y + 0.5;
+        while (next < n && top[order[next]] <= yc) active.push(order[next++]);
+        let w = 0;
+        for (let k = 0; k < active.length; k++) if (bot[active[k]] > yc) active[w++] = active[k];
+        active.length = w;
+        const xs = [];
+        for (const e of active) {
+          const ea = edges[4 * e + 1], eb = edges[4 * e + 3];
           if ((ea <= yc) === (eb <= yc)) continue;
-          xs.push(edges[e] + (yc - ea) * (edges[e + 2] - edges[e]) / (eb - ea));
+          xs.push(edges[4 * e] + (yc - ea) * (edges[4 * e + 2] - edges[4 * e]) / (eb - ea));
         }
-        xs.sort((a, b) => a - b);
+        xs.sort((u, v) => u - v);
         for (let k = 0; k + 1 < xs.length; k += 2) {
           const xa = Math.max(0, Math.ceil(xs[k] - 0.5)), xb = Math.min(width - 1, Math.floor(xs[k + 1] - 0.5));
           for (let x = xa; x <= xb; x++) out[y * width + x] |= bit;

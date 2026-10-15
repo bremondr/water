@@ -47,7 +47,7 @@ export function readTiledFloatTiff(buf) {
 // Fetch the DMR 5G window as heights in metres (Float32Array, NaN = no data), rows north to south.
 export async function fetchDem(win) {
   const q = new URLSearchParams({
-    bbox: win.bbox.join(','), bboxSR: '3857', imageSR: '3857', size: `${win.size},${win.size}`, format: 'tiff', pixelType: 'F32',
+    bbox: win.bbox.join(','), bboxSR: '3857', imageSR: '3857', size: `${win.width ?? win.size},${win.height ?? win.size}`, format: 'tiff', pixelType: 'F32',
     noData: '-9999', interpolation: 'RSP_BilinearInterpolation', f: 'json',
   });
   const meta = await (await fetch(`${SERVICE}/exportImage?${q}`, { signal: AbortSignal.timeout(120_000) })).json();

@@ -8,6 +8,7 @@ import { scrapeWeirs, loadNoDataWeirs } from './weirs.mjs';
 import { povodi } from './basins.mjs';
 import { buildClimate } from './climate.mjs';
 import { createCache } from './cache.mjs';
+import { createCorridorService } from './experiments/flood/corridor-api.mjs';
 
 const BASE = 'https://opendata.chmi.cz/hydrology/now';
 const RECENT = 'https://opendata.chmi.cz/hydrology/recent/data';
@@ -116,10 +117,13 @@ const reservoirs = createCache({ name: 'reservoirs', ttl: TTL, build: buildReser
 const climate = createCache({ name: 'climate', ttl: 7 * 24 * 3600 * 1000, build: buildClimate });
 
 const json = { 'content-type': 'application/json', 'cache-control': 'max-age=60' };
+// corridor flood experiment: holds the corridor terrain in memory on first use and serves its map tiles
+const corridor = createCorridorService({ dir: new URL('./experiments/flood/data/corridor-labe/', import.meta.url), getStations: () => stations.get() });
 
 http.createServer(async (req, res) => {
   try {
     if (req.url.startsWith('/api/reservoirs')) { res.writeHead(200, json); return res.end(await reservoirs.get()); }
+    if (await corridor(req, res)) return;
     // experimental flood-extent page and its terrain data (experiments/flood/), static files only
     if (req.url.startsWith('/experiments/flood/')) {
       const rel = decodeURIComponent(req.url.split('?')[0].slice('/experiments/flood/'.length)) || 'index.html';

@@ -100,8 +100,8 @@ export function orient(axis, fx, fy, tx, ty) {
 // How well does the modelled flood agree with an official zone? Both are masks over the same grid. Zone cells that belong to
 // other rivers in the window are never reachable by a flood from this station, so recall is a lower bound.
 //   bit: which bit of `zones` to test; region: optional { cx, cy, radius } circle (pixels) to compare inside
-export function compareWithZone(flood, zones, bit, region = null) {
-  const width = Math.round(Math.sqrt(flood.length)), r2 = region ? region.radius ** 2 : Infinity;
+export function compareWithZone(flood, zones, bit, region = null, gridWidth = null) {
+  const width = gridWidth ?? Math.round(Math.sqrt(flood.length)), r2 = region ? region.radius ** 2 : Infinity;
   let zoneCells = 0, floodCells = 0, both = 0;
   for (let i = 0; i < flood.length; i++) {
     if (region) { const x = i % width, y = (i - x) / width; if ((x - region.cx) ** 2 + (y - region.cy) ** 2 > r2) continue; }

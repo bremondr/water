@@ -35,6 +35,15 @@ Prototype web app. Node 20+ (ESM, no dependencies, no build step). UI language i
   water surface (slope in cm/km along the channel direction derived from the flat river in the DEM, optionally estimated from
   neighbouring gauges) and can search the stage that best matches a zone. Known limits are listed on the page; do not present it as
   a forecast or a flood map.
+- **Corridor model** (experiment, builds on the above): `node scripts/fetch-corridor.mjs padUp=24000` builds a terrain corridor along the Labe from
+  Ústí to above Kostelec (~96 km, 8 m cells, ~150 MB in `experiments/flood/data/corridor-labe/`, gitignored): terrain `z.bin`, river coordinate
+  `s.bin` (metres upstream of the downstream end, from the VÚV river-reach centreline in `river.mjs`), official zones `zones.bin`, plus gauges,
+  weirs and the peak levels of the 2002/2006/2013/2024 floods in `manifest.json`. `corridor.mjs` turns the levels of all gauges into a water surface
+  along `s` (optionally flat pools with steps at weirs) and floods the connected cells below it; `experiments/flood/corridor-api.mjs` (loaded lazily
+  by `server.mjs`, ~150 MB RAM) serves scenarios and PNG map tiles; the page is `/experiments/flood/corridor.html`. `npm run corridor-eval`
+  compares the variants against the official zones for each event. Findings 2026-10-15: a single flat level over 96 km fits badly (IoU 0.3-0.5),
+  the gauge profile fits well (0.6-0.8) and orders the events like their return periods (2024 matches Q5, 2006 Q20, 2013 Q100, 2002 exceeds Q100);
+  weir steps make flood-stage fits worse (weirs are open in floods), so they are off by default.
 - `basins.mjs`: station → povodí mapping from the hydrological order number (approximate).
 - `cache.mjs`: stale-while-revalidate cache persisted to `.cache/` (gitignored). A restart serves the last good data
   instantly. A failed refresh keeps the previous value.

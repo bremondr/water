@@ -1,16 +1,26 @@
 # water: Czech river gauges and reservoirs map
 
+**Branch `pages`**: static version for GitHub Pages. The flood experiment (terrain, zones, corridor model) lives only on `main`.
+
 Prototype web app. Node 20+ (ESM, no dependencies, no build step). UI language is Czech.
 
 ## Commands
-- `npm start`: server on http://localhost:8080 (`PORT` env var changes it).
+- `npm start`: local server on http://localhost:8080 (`PORT` env var changes it). Serves the same `data/*.json` files the static site has.
+- `npm run build`: static build into `site/` (gitignored): `index.html`, `climate.mjs`, `data/{stations,reservoirs,climate}.json`. Sources younger than
+  their TTL are not fetched again (`STATIONS_TTL_MIN` 25, `RESERVOIRS_TTL_MIN` 55, `CLIMATE_TTL_MIN` 10080). Exits 1 if a source has no data at all.
 - `npm test`: offline parser/cache/basin tests (`node --test "test/*.test.mjs"`).
 - `npm run fixtures`: re-saves the live portal pages into `test/fixtures/` (needs network). Run it when a portal
   changes layout, then fix the parser until the tests pass again.
 - `npm run geocode`: looks up missing dam positions in OpenStreetMap, keeps existing entries.
 
 ## Layout
-- `server.mjs`: HTTP server and the ČHMÚ station builder. `/api/stations`, `/api/reservoirs`, serves `index.html`.
+- `builders.mjs`: ČHMÚ station builder and reservoir/weir builder, shared by the server and the static build. Past days (D-1, D-2) persist in
+  `.cache/past.json`, so a build only asks ČHMÚ for today's files (~550 requests).
+- `server.mjs`: local dev server, `data/stations.json`, `data/reservoirs.json`, `data/climate.json`, `climate.mjs`, `index.html`.
+- `scripts/build-static.mjs` + `.github/workflows/pages.yml`: every 30 min (and on push to `pages`) restore `.cache/` from the Actions cache, run tests,
+  build, deploy with `deploy-pages`. Scheduled runs are the only thing that touches the sources; GitHub delays them by 5-20 min, so the data is
+  25-60 min old. Nothing is committed. Public repos get scheduled workflows disabled after 60 days without commits.
+- `docs/pla-portal-features.md`: research on what the PLA portals offer that we do not (2026-11-11), with pitch notes.
 - `dams.mjs`: scraper + pure functions (`parseTable`, `joinTables`, `finalizeReservoirs`) for the five povodí portals.
 - `weirs.mjs`: Elbe weirs/locks (Střekov, Opatovice nad Labem) scraped from Povodí Labe station pages; they ride along in
   `/api/reservoirs` as `weirs` and show in the "Nádrže a jezy" mode. Only stations whose level is in m n. m. are weirs (2 of 124).
@@ -20,36 +30,10 @@ Prototype web app. Node 20+ (ESM, no dependencies, no build step). UI language i
 - `climate.mjs`: long-term characteristics per station (ČHMÚ `characteristic/`: Qa, monthly avg/min/max flow, M-day flow-duration
   curve, reference period 1991-2020), served at `/api/climate`, cached 7 days. Level averages (`ha`) and `qa` come from station
   metadata and ride along in `/api/stations`.
-- `experiments/flood/` + `dem.mjs` + `scripts/fetch-dem.mjs`: **experiment**, not part of the app. A 'bathtub with connectivity'
-  flood extent: terrain from ČÚZK DMR 5G (ImageServer, 2 m grid, window of 5 km around a station, Web Mercator), water
-  plane = gauge zero (`WGS_ELE` in the ČHMÚ metadata) + stage, flooded = below the plane and connected to the river.
-  Open `/experiments/flood/` after `node scripts/fetch-dem.mjs <stationId>` (data is gitignored; four stations were fetched
-  during development). The DEM shows rivers at their level during the LiDAR survey, so stages below that stay in the channel.
-  Official flood zones (Q5/Q20/Q100/Q500/active zone) come from the VÚV WFS (`zones.mjs`, rasterised onto the same grid, bit per
-  layer in `<id>.zones.bin`) and are drawn as outlines. **The WFS coordinates lack the S-JTSK to WGS84 datum shift** (outlines were ~70 m
-  west and ~80 m south of the terrain): `zones.mjs` corrects it with `+towgs84=589,76,480`, and `npm run zone-offset <stationId>` checks the
-  alignment against the terrain (residual about 10 m). Re-fetch zones after touching that code.
-  `npm run fit-stage` prints, per station and zone, the gauge stage whose flat-plane flood best matches the zone next to the stage
-  the rating curve gives for the same N-year flow. Result on 2026-10-15: Q100 agrees within ~0.1-0.8 m at all four stations (IoU 0.70-0.83).
-  Zones are drawn as outlines, with precision/recall/IoU against the modelled extent. The page can tilt the
-  water surface (slope in cm/km along the channel direction derived from the flat river in the DEM, optionally estimated from
-  neighbouring gauges) and can search the stage that best matches a zone. Known limits are listed on the page; do not present it as
-  a forecast or a flood map.
-- **Corridor model** (experiment, builds on the above): `node scripts/fetch-corridor.mjs` builds a multi-reach terrain corridor in
-  `experiments/flood/data/corridor-labe/` (gitignored, ~0.8 GB RAM when served): the Labe from Hřensko to above Nymburk (171 km) plus the lower
-  Ohře (16 km) and Vltava (26 km), 10 m cells. Files: terrain `z.bin`, river coordinate `s.bin` (metres upstream along each reach), reach index
-  `r.bin`, official zones `zones.bin`, and `manifest.json` (reaches, gauges with reach + s, weirs, peak levels of the 2002/2006/2013/2024 floods).
-  Reach centrelines come from the VÚV WFS (`river.mjs`); tributaries start at the parent's level at their mouth (backwater) and get slope
-  anchors from gauges up to `anchorKm` (Louny, Prague gauges) beyond the corridor itself. Event peaks more than 4 days from the median peak time
-  are dropped (gauge has no data from the flood, e.g. Děčín/Hřensko 2002). `corridor.mjs` turns gauge levels into a water surface and floods
-  connected cells below it; `experiments/flood/corridor-api.mjs` serves scenarios and PNG tiles; page: `/experiments/flood/corridor.html`.
-  `npm run corridor-eval` compares variants with the zones. Findings 2026-10-15: flat level fits badly (Q100 IoU 0.36-0.43), gauge profile
-  0.65 (2002), 0.60 (2006), 0.70 (2013), 0.43 (2024, a smaller flood: precision 99 %, low coverage expected); weir steps make flood fits worse
-  (weirs are open in floods), so they are off by default. Weak spots: Kostelec–Čelákovice (few gauges), Ohře/Vltava far from their gauges.
 - `basins.mjs`: station → povodí mapping from the hydrological order number (approximate).
 - `cache.mjs`: stale-while-revalidate cache persisted to `.cache/` (gitignored). A restart serves the last good data
   instantly. A failed refresh keeps the previous value.
-- `index.html`: the whole frontend (Leaflet from cdnjs). Station mode and reservoir mode share one map and sidebar.
+- `index.html`: the whole frontend (Leaflet from cdnjs). Station mode and reservoir mode share one map and sidebar. Fetches `data/*.json` relative to the page.
 - `dam-coords.json`: `"pla:107": [lat, lon]`, a third value `1` means **approximate position** (shown with a dashed
   ring and a notice in the UI). Hand-editable. Dams without an entry are not shown.
 - `docs/licensing-and-terms.md`: **unresolved** licensing/terms questions. Read before publishing anything.

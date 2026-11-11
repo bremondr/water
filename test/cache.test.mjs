@@ -47,3 +47,17 @@ test('get() rejects when there is no data at all and the first build fails', asy
   await quiet(() => assert.rejects(c.get(), /no data available/));
   await rm(dir, { recursive: true });
 });
+
+test('ensureFresh: waits for a rebuild when stale, serves the saved value when fresh, keeps it when the rebuild fails', async () => {
+  const dir = await tmp(); let calls = 0, fail = false;
+  const make = ttl => createCache({ name: 'e', ttl, dir, build: async () => { if (fail) throw new Error('down'); return { n: ++calls }; } });
+  assert.deepEqual(JSON.parse(await make(60_000).ensureFresh()), { n: 1 });
+  assert.deepEqual(JSON.parse(await make(60_000).ensureFresh()), { n: 1 }, 'a new process reuses the disk value');
+  assert.equal(calls, 1);
+  await wait(5);
+  fail = true;
+  await quiet(async () => assert.deepEqual(JSON.parse(await make(1).ensureFresh()), { n: 1 }, 'stale value kept after a failed rebuild'));
+  fail = false;
+  assert.deepEqual(JSON.parse(await make(1).ensureFresh()), { n: 2 });
+  await rm(dir, { recursive: true });
+});

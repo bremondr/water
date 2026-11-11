@@ -19,8 +19,8 @@ export function createCache({ name, ttl, build, dir = new URL('./.cache/', impor
       await restore;
       const data = await build(value?.data ?? null);
       value = { at: Date.now(), body: JSON.stringify(data), data };
-      mkdir(dir, { recursive: true }).then(() => writeFile(file, JSON.stringify({ at: value.at, data })))
-        .catch(e => console.error(`[${name}] could not write disk cache: ${e.message}`));
+      try { await mkdir(dir, { recursive: true }); await writeFile(file, JSON.stringify({ at: value.at, data })); }
+      catch (e) { console.error(`[${name}] could not write disk cache: ${e.message}`); }
     })().catch(e => console.error(`[${name}] refresh failed${value ? ' (keeping previous data)' : ''}: ${e.message}`))
       .finally(() => { loading = null; });
     return loading;
@@ -32,6 +32,12 @@ export function createCache({ name, ttl, build, dir = new URL('./.cache/', impor
       await restore;
       if (!value) { await refresh(); if (!value) throw new Error(`${name}: no data available yet`); }
       else if (Date.now() - value.at > ttl) refresh();      // serve stale, refresh behind the scenes
+      return value.body;
+    },
+    // For one-shot scripts: use the saved value when it is younger than the ttl, otherwise rebuild and wait for it. Returns the JSON body.
+    async ensureFresh() {
+      await restore;
+      if (!value || Date.now() - value.at > ttl) { await refresh(); if (!value) throw new Error(`${name}: no data available`); }
       return value.body;
     },
     // Call once at startup: refreshes now if stale, then keeps the data fresh even when nobody is asking.

@@ -27,6 +27,11 @@ input,select{width:100%;padding:9px 10px;border:1px solid var(--field);border-ra
 .chip{border:1px solid var(--field);background:var(--bg);color:var(--text);border-radius:99px;padding:4px 10px;font-size:13px;cursor:pointer}
 .chip[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
 #list{overflow:auto;flex:1;min-height:0;border-top:1px solid var(--line)}
+.about{padding:8px 16px;border-top:1px solid var(--line);line-height:1.45}
+.about summary{cursor:pointer}
+.about p{margin:6px 0 0}
+.about a{color:var(--accent)}
+.stale{color:var(--d3t);font-weight:600}
 .row{display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--line);cursor:pointer}
 .row:hover,.row.sel{background:var(--bg)}
 .dot{width:12px;height:12px;border-radius:50%;flex:none;display:inline-block}
@@ -79,6 +84,7 @@ body.dams #river,body.dams #chips{display:none}
  #app{grid-template-columns:minmax(0,1fr);grid-template-rows:auto 1fr}
  #side{border-right:0;border-bottom:1px solid var(--line)}
  #list{display:none}
+ .about{display:none}
  body.showlist #list{display:block;max-height:45vh}
  #bar{display:block}
  header{padding:10px 16px 6px}
@@ -103,6 +109,12 @@ body.dams #river,body.dams #chips{display:none}
    <button class="chip" id="bar" aria-pressed="false">Zobrazit seznam</button>
   </div>
   <div id="list"></div>
+  <footer class="sub about"><details><summary>O datech a zdrojích</summary>
+   <p>Informativní údaje bez záruky. Nejde o výstražnou ani předpovědní službu; při povodních sledujte oficiální informace povodí a ČHMÚ.
+   Data se stahují automaticky přibližně každých 30 minut a mohou být zpožděná.</p>
+   <p>Zdroje: ČHMÚ (<a href="https://opendata.chmi.cz/hydrology/">otevřená data</a>), webové portály Povodí Labe, Vltavy, Ohře, Odry a Moravy,
+   OpenStreetMap, Wikipedie a Wikidata (polohy a seznam jezů), mapový podklad © přispěvatelé OpenStreetMap. Neoficiální projekt,
+   <a href="https://github.com/bremondr/water">zdrojový kód</a>.</p></details></footer>
  </aside>
  <main id="main"><div id="map"></div>
   <div class="legend" id="legend"></div>
@@ -399,7 +411,7 @@ function openDam(d,pan=true){
 }
 async function loadDams(){
   try{
-    const r=await fetch('/api/reservoirs');if(!r.ok)throw new Error(r.status);
+    const r=await fetch('data/reservoirs.json');if(!r.ok)throw new Error(r.status);
     const body=await r.json();D=[...body.reservoirs,...(body.weirs||[])];damErrors=body.errors||[];
     if(selD)selD=D.find(x=>x.key===selD.key)||null;
     if(mode==='dam'){renderDams();if(selD)openDam(selD,false);legend()}
@@ -430,9 +442,10 @@ $('bar').onclick=()=>{const on=document.body.classList.toggle('showlist');$('bar
 
 async function load(){
   try{
-    const r=await fetch('/api/stations');if(!r.ok)throw new Error(r.status);
+    const r=await fetch('data/stations.json');if(!r.ok)throw new Error(r.status);
     const d=await r.json();S=d.stations;S.forEach(s=>s.st=status(s));
-    $('updated').textContent='Aktualizováno '+new Date(d.updated).toLocaleString('cs-CZ')+' · '+S.length+' stanic · zdroj ČHMÚ';
+    const age=(Date.now()-new Date(d.updated))/36e5;
+    $('updated').innerHTML='Aktualizováno '+new Date(d.updated).toLocaleString('cs-CZ')+' · '+S.length+' stanic · zdroj ČHMÚ'+(age>3?' <span class="stale">· data jsou starší než '+Math.floor(age)+' h</span>':'');
     const povs=[...new Set(S.map(s=>s.pov))].sort((a,b)=>a.localeCompare(b,'cs'));
     const cp=$('pov').value;
     $('pov').innerHTML='<option value="">Všechna povodí</option>'+povs.map(x=>`<option value="${esc(x)}">${esc(x)} (${S.filter(s=>s.pov===x).length})</option>`).join('');
@@ -445,8 +458,8 @@ async function load(){
     else if(location.hash.length>1){const s=S.find(x=>x.id===location.hash.slice(1));if(s)open(s)}
   }catch(e){$('updated').textContent='Data se nepodařilo načíst: '+e.message}
 }
-import('/climate.mjs').then(m=>{exceedanceDays=m.exceedanceDays;if(mode==='st'&&sel)open(sel,false)}).catch(()=>{});
-fetch('/api/climate').then(r=>r.ok?r.json():null).then(b=>{if(b){climate=b.stations||{};if(mode==='st'&&sel)open(sel,false)}}).catch(()=>{});
+import('./climate.mjs').then(m=>{exceedanceDays=m.exceedanceDays;if(mode==='st'&&sel)open(sel,false)}).catch(()=>{});
+fetch('data/climate.json').then(r=>r.ok?r.json():null).then(b=>{if(b){climate=b.stations||{};if(mode==='st'&&sel)open(sel,false)}}).catch(()=>{});
 load().then(()=>{const p=new URLSearchParams(location.search).get('pov');if(p){$('pov').value=p;$('pov').onchange()}});setInterval(load,10*60*1000);
 loadDams().then(()=>{const u=new URLSearchParams(location.search);if(u.get('mode')==='dam'){setMode('dam');const d=D.find(x=>x.key===u.get('id'));if(d)openDam(d)}});setInterval(loadDams,10*60*1000);
 </script>

@@ -2,3 +2,4 @@ _scratch/
 node_modules/
 .cache/
 experiments/flood/data/
+site/

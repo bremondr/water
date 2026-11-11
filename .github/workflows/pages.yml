@@ -1,0 +1,44 @@
+name: Pages
+
+# Builds the JSON data and deploys the static site. The schedule is the only thing that touches ČHMÚ and the povodí portals
+# (scripts/build-static.mjs skips a source that is younger than its TTL), so traffic to them does not depend on visitors.
+on:
+  schedule:
+    - cron: '7,37 * * * *'        # every 30 minutes, off the hour boundaries
+  push:
+    branches: [pages]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Restore the last good data
+        uses: actions/cache@v4
+        with:
+          path: .cache
+          key: data-${{ github.run_id }}
+          restore-keys: data-
+      - run: npm test
+      - run: node scripts/build-static.mjs
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - id: deployment
+        uses: actions/deploy-pages@v4

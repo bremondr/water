@@ -81,6 +81,26 @@ Last reviewed: 2026-10-14.
 - Mapy.com (Mapy.cz) was only used as a manual research aid for dam positions. Do not copy coordinates from it
   in bulk: its terms restrict that. Positions found there should be confirmed independently (OSM, official sources).
 
+## Poland: IMGW-PIB (`countries/pl.mjs`)
+- Source: `https://danepubliczne.imgw.pl/api/data/hydro` (JSON, all ~913 gauges in one call, no key, no login). Terms: "Regulamin
+  udostępniania danych" on https://danepubliczne.imgw.pl/apiinfo, read on 2026-11-11. The data owner is the Skarb Państwa, IMGW-PIB administers it.
+  Legal basis cited there: the Polish open-data act (2021) and EU implementing regulation 2023/138 (high-value datasets).
+- Licence as written: use is free (§5 ust. 2) but "for private purposes" (§5 ust. 1: "do celów prywatnych"; for *high-value data* any purpose).
+  "Private" means non-profit; "cel działalności gospodarczej" (§2) explicitly includes publishing on websites that carry ads.
+- **Commercial use needs a contract** (§3 ust. 2 and §5 ust. 1): use "dla potrzeb działalności gospodarczej" or for shipping, fishing, agriculture,
+  water-management planning etc. requires an agreement on cost sharing. §5 ust. 6 calls free use for those purposes fraud (art. 286 k.k.).
+  Requests: biznes@imgw.pl. We could not determine whether hydrological gauge data count as "high-value data" (which would make any use free).
+- Required attribution (§5 ust. 3): "Źródłem pochodzenia danych jest Instytut Meteorologii i Gospodarki Wodnej – Państwowy Instytut Badawczy".
+  Processed data (§5 ust. 4) must also carry: "Dane Instytutu Meteorologii i Gospodarki Wodnej – Państwowego Instytutu Badawczego zostały
+  przetworzone". Both are in `about` of the module, the short credit "IMGW-PIB" is in the map attribution. Missing attribution may lead to
+  liability (§5 ust. 5). §6: no liability for damages, data may be unverified.
+- Automated access is not forbidden; no rate limit is stated. Data update about hourly (newest readings 20 min past the hour, some stations
+  every 3 h). We refresh at most once an hour (1 request per build), the User-Agent identifies the project.
+- Warning/alarm stages (stan ostrzegawczy/alarmowy, cm) are mapped to flood degrees 1 and 2. This is our interpretation; do not present it as official degrees.
+- Not verified: the time zone of the timestamps (they look like UTC: the newest readings were ~40 min older than the UTC clock, it would be ~100 min
+  if Polish local time); whether discharge values are provisional; the exact update schedule; the legal status of a public non-commercial site.
+- The same API also offers `warningshydro` (official hydrological warnings); not used.
+
 ## Politeness towards the sources
 - ČHMÚ: a full station refresh is ~550 requests every 10 minutes (the two previous days are cached in memory
   and fetched once per day). The server refreshes on its own timer while it runs, even with no visitors.

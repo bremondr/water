@@ -97,3 +97,13 @@ Last reviewed: 2026-10-14.
 - [ ] Replace the public OSM tile server with a provider that allows the expected traffic.
 - [ ] Review the ODbL (OSM) and CC BY-SA (Wikipedia) implications of publishing `dam-coords.json`, and credit them.
 - [ ] Decide whether the repo may become public (it contains scraper code and positions derived from OSM).
+
+## Finsko (SYKE), `countries/fi.mjs`
+- Source: SYKE hydrology OData API `https://rajapinnat.ymparisto.fi/api/Hydrologiarajapinta/1.1/odata/` (Paikka, Vedenkorkeus, Virtaama). No key, no login.
+- Licence: SYKE "Use license and responsibilities" (https://www.syke.fi/en/environmental-data/use-license-and-responsibilities, updated 29.1.2026):
+  "is licenced under Creative Commons Attribution 4.0 International licence"; credit the licensor and dataset, example "Source: Finnish Environment Institute (Syke)".
+  Also: "Some data distributed by (Syke) are subject to specific restrictions of use" (check dataset metadata) and "The user uses the service and the
+  information contained therein at their own risk". UI wording used: "Lähde: Suomen ympäristökeskus (Syke)", plus a no-warranty note.
+- Update interval: values are daily means (Aika at local midnight), so `ttlMin` is 180. About 12 requests per build (3 pages of 500 for Paikka, 5 for Vedenkorkeus, 3 for Virtaama over the last 3 days).
+- Not verified: that the Hydrologiarajapinta dataset itself carries no extra restriction in its metadata (the avoindata.fi page returned 403 to the fetch tool;
+  the CC BY 4.0 statement for the dataset came from a search summary and the general SYKE page); the exact level reference per place (not documented in what we found).

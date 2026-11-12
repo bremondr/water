@@ -76,6 +76,22 @@ Last reviewed: 2026-10-14.
   Wikidata coordinates. Wikipedia text is CC BY-SA, Wikidata is CC0, OSM is ODbL: mention all three in the
   attribution/sources page. Mapy.com could not be used (its API needs a key, and its terms restrict bulk copying).
 
+### Germany: WSV PEGELONLINE (`countries/de.mjs`)
+- Source: `https://www.pegelonline.wsv.de/webservices/rest-api/v2/stations.json?includeTimeseries=true&includeCurrentMeasurement=true&includeCharacteristicValues=true`
+  (REST API docs: `/webservice/dokuRestapi`). No key, no registration. One request returns all ~786 stations (~1.5 MB, ~3 s); one request per build.
+- Terms (read 2026-11-11 at `https://www.pegelonline.wsv.de/gast/nutzungsbedingungen`, "Stand: 21.05.2024", linked from the site footer): "Informationen,
+  Produkte oder Dienste, die Sie von dieser Website erhalten, dürfen übernommen werden. Dies geschieht auf der Grundlage der Lizenz DL-DE->Zero-2.0".
+  Data and metadata may be used commercially and non-commercially, copied, changed, combined with other data and embedded in products. DL-DE Zero 2.0
+  needs no attribution; we credit "WSV / PEGELONLINE" anyway. Copyright of the web pages stays with ITZBund and the WSV. No rate limit is stated.
+- Disclaimer in the terms: ITZBund and GDWS give no warranty for correctness, accuracy, timeliness or completeness; the portal also shows data of third parties
+  (national and international agencies), for which the same disclaimer applies. The `about` note repeats this.
+- Interval: TTL 30 min (the source updates every 15 min). History: the API is queried for the current value only; the 48 h series builds up over runs
+  (`mergeHistory`), so a fresh country shows one point per station.
+- Czech Elbe stations (agency POVODÍ LABE) are in the feed but have no coordinates and are dropped; Dutch, Austrian and Swiss agencies are dropped explicitly.
+- Not verified: the exact meaning of the flood marks M_I..M_III (they are WSV marks, apparently navigation related, not Länder flood-warning levels: shown as
+  "Marke I..III", not as an official flood scheme); the reference period of MW/NNW (differs per station); whether the WSV wants contact before heavy use;
+  the licence of third-party data shown in the portal.
+
 ### Other
 - Leaflet 1.9.4 (BSD-2-Clause) loaded from cdnjs.
 - Mapy.com (Mapy.cz) was only used as a manual research aid for dam positions. Do not copy coordinates from it

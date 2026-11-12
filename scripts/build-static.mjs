@@ -6,7 +6,7 @@
 import { mkdir, writeFile, copyFile, rm } from 'node:fs/promises';
 import { loadCountries, cacheName, countryMeta } from '../countries/index.mjs';
 import { createCache } from '../cache.mjs';
-import { normalizeStations } from '../countries/lib.mjs';
+import { normalizeStations, normalizeUpdated } from '../countries/lib.mjs';
 
 const only = process.argv.slice(2);
 const out = new URL('../site/', import.meta.url);
@@ -22,7 +22,7 @@ for (const c of (await loadCountries()).filter(c => !only.length || only.include
     const src = c.sources[name];
     const ttl = Number(process.env[`${name.toUpperCase()}_TTL_MIN`] ?? src.ttlMin) * 60_000;
     try {
-      const build = name === 'stations' ? async prev => { const d = await src.build(prev); return { ...d, stations: normalizeStations(d.stations) }; } : src.build;
+      const build = name === 'stations' ? async prev => { const d = await src.build(prev); return { ...d, updated: normalizeUpdated(d.updated), stations: normalizeStations(d.stations) }; } : src.build;
       const body = await createCache({ name: cacheName(c, name), ttl, build }).ensureFresh();
       if (name === 'stations' && !JSON.parse(body).stations.length) throw new Error('no stations');
       await writeFile(new URL(`data/${c.id}/${name}.json`, out), body);

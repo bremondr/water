@@ -97,3 +97,13 @@ Last reviewed: 2026-10-14.
 - [ ] Replace the public OSM tile server with a provider that allows the expected traffic.
 - [ ] Review the ODbL (OSM) and CC BY-SA (Wikipedia) implications of publishing `dam-coords.json`, and credit them.
 - [ ] Decide whether the repo may become public (it contains scraper code and positions derived from OSM).
+
+## Anglie (`countries/gb.mjs`): Environment Agency flood-monitoring API
+- Source: `https://environment.data.gov.uk/flood-monitoring/` (`/id/stations?parameter=level` and `/data/readings?latest&parameter=level`).
+  No key, no registration. Service status in the response: "Beta service".
+- Licence (verified 2026-11-11 in `meta.licence` of both responses): Open Government Licence v3.0. Required attribution, used verbatim in the
+  UI note: "Contains public sector information licensed under the Open Government Licence v3.0." plus "Environment Agency".
+- Updates: gauges report every 15 min; the build uses ttlMin 30 and makes 2 requests (about 3.8 MB + 1.3 MB).
+- Not verified: the EA's own API terms page (fair-use / rate limits) was not read; only the OGL statement in the responses was checked.
+  Whether the data counts as a "warning" use: the UI says it is informational and links to check-for-flooding.service.gov.uk.
+- Levels are metres in several datums (mASD, mAOD, m, mBDAT); they are shown as cm without conversion between datums.

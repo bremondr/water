@@ -104,7 +104,7 @@ body.dams #river,body.dams #chips{display:none}
   <div class="controls">
    <select id="country" aria-label="Země" style="display:none"></select>
    <input id="q" type="search" placeholder="Hledat stanici nebo tok…" autocomplete="off">
-   <select id="pov"><option value="">Všechna povodí</option></select>
+   <select id="pov" aria-label="Oblast"><option value="">Všechna povodí</option></select>
    <select id="river"><option value="">Všechny toky</option></select>
    <div class="chips" id="chips"></div>
    <button class="chip" id="bar" aria-pressed="false">Zobrazit seznam</button>
@@ -239,7 +239,7 @@ function longTerm(s){
     const diff=s.st.h-s.ha;
     return`<div class="thr"><b>Dlouhodobý průměr</b>
      <div style="display:block">Průměrný vodní stav: <b>${fmt(s.ha)} cm</b> · nyní ${fmt(s.st.h)} cm (${diff>=0?'+':'−'}${fmt(Math.abs(diff))} cm)</div></div>
-     <div class="sub" style="padding:0 16px 12px">Zdroj: ČHMÚ, metadata stanice. Referenční období ČHMÚ u vodních stavů neuvádí.</div>`;
+     ${CC.haNote?`<div class="sub" style="padding:0 16px 12px">${CC.haNote}</div>`:""}`;
   }
   const qa=c?.qa??s.qa,q=s.st.q;
   if(qa==null)return'';
@@ -469,7 +469,7 @@ async function setCountry(id){
   document.body.classList.remove('dams');$('detail').classList.remove('open');
   document.querySelectorAll('#modes .chip').forEach(b=>b.setAttribute('aria-pressed',b.dataset.mode==='st'));
   $('q').value='';$('q').placeholder='Hledat stanici nebo tok…';$('river').value='';
-  $('pov').innerHTML=`<option value="">${esc(CC.allRegions)}</option>`;
+  $('pov').innerHTML=`<option value="">${esc(CC.allRegions)}</option>`;$('pov').setAttribute('aria-label',CC.regionLabel);
   $('country').value=CC.id;$('modes').style.display=CC.has.reservoirs?'':'none';$('aboutCountry').innerHTML=CC.about;
   if(creditText)map.attributionControl.removeAttribution(creditText);
   creditText='data '+CC.source;map.attributionControl.addAttribution(creditText);

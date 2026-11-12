@@ -65,7 +65,7 @@ export default {
    (hladiny řek v Anglii, aktualizace po 15 minutách, mapa je obnovována přibližně po 30 minutách).
    Contains public sector information licensed under the Open Government Licence v3.0. Environment Agency.</p>
    <p>Hladiny jsou v centimetrech nad datem stanice (nejčastěji místní nula vodočtu, někdy nadmořská výška v m n. m. Newlyn), proto
-   se nedají porovnávat mezi stanicemi. Environment Agency v tomto API neposkytuje prahy povodňových stupňů, stanice jsou proto šedé
+   se nedají porovnávat mezi stanicemi. Stanice, které hlásí jen výšku v m n. m. (kolem 550), ukazují absolutní nadmořskou výšku hladiny (např. 4 530 cm), jejich vývoj je správný, ale hodnotu nelze přímo srovnat s ostatními. Environment Agency v tomto API neposkytuje prahy povodňových stupňů, stanice jsou proto šedé
    (bez stupně) a zobrazují jen poslední naměřenou hodnotu a vývoj. Údaje jsou orientační a nejsou varováním před povodní;
    oficiální varování najdete na <a href="https://check-for-flooding.service.gov.uk/">check-for-flooding.service.gov.uk</a>.</p>`,
   sources: { stations: { ttlMin: 30, build: buildStations } },

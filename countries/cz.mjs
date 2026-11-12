@@ -10,6 +10,7 @@ export default {
     short: ['Normální', '1. SPA', '2. SPA', '3. SPA', 'Extrém'],
   },
   source: 'ČHMÚ',
+  haNote: 'Zdroj: ČHMÚ, metadata stanice. Referenční období ČHMÚ u vodních stavů neuvádí.',
   about: `<p>Zdroje: ČHMÚ (<a href="https://opendata.chmi.cz/hydrology/">otevřená data</a>), webové portály Povodí Labe, Vltavy, Ohře, Odry a Moravy,
    OpenStreetMap, Wikipedie a Wikidata (polohy a seznam jezů).</p>`,
   sources: {

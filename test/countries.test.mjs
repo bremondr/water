@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mergeHistory, normalizeStations, GENERIC_LEVELS } from '../countries/lib.mjs';
+import { mergeHistory, normalizeStations, normalizeUpdated, GENERIC_LEVELS } from '../countries/lib.mjs';
 import { loadCountries, cacheName, countryMeta } from '../countries/index.mjs';
 
 test('mergeHistory: appends new points to the previous series, dedupes by time and keeps the last 48 h', () => {
@@ -44,4 +44,13 @@ test('country modules: Česko comes first, ids match file names, meta has no fun
   assert.equal(cacheName({ id: 'cz' }, 'stations'), 'stations');
   assert.equal(cacheName({ id: 'pl' }, 'stations'), 'pl-stations');
   assert.equal(GENERIC_LEVELS.names.length, 5);
+});
+
+test('normalizeUpdated: ISO string out, epoch seconds and ms converted, future times capped, junk becomes now', () => {
+  const now = Date.parse('2026-11-11T12:00:00Z');
+  assert.equal(normalizeUpdated('2026-11-11T10:00:00Z', now), '2026-11-11T10:00:00.000Z');
+  assert.equal(normalizeUpdated(Date.parse('2026-11-11T10:00:00Z') / 1000, now), '2026-11-11T10:00:00.000Z');
+  assert.equal(normalizeUpdated(Date.parse('2026-11-11T10:00:00Z'), now), '2026-11-11T10:00:00.000Z');
+  assert.equal(normalizeUpdated('2026-11-11T14:00:00Z', now), '2026-11-11T12:00:00.000Z');
+  assert.equal(normalizeUpdated(undefined, now), '2026-11-11T12:00:00.000Z');
 });

@@ -19,5 +19,5 @@ export const cacheName = (country, source) => (country.id === 'cz' ? source : `$
 // what the frontend needs to know about a country (no functions)
 export const countryMeta = c => ({
   id: c.id, name: c.name, center: c.center, zoom: c.zoom, regionLabel: c.regionLabel, allRegions: c.allRegions, levels: c.levels,
-  source: c.source, about: c.about, has: { reservoirs: !!c.sources.reservoirs, climate: !!c.sources.climate },
+  source: c.source, about: c.about, haNote: c.haNote || '', has: { reservoirs: !!c.sources.reservoirs, climate: !!c.sources.climate },
 });

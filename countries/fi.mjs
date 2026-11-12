@@ -1,6 +1,6 @@
 // Finsko: SYKE (Suomen ympäristökeskus) hydrology OData API, daily values of water level (Vedenkorkeus) and discharge (Virtaama).
 // Entities: Paikka (places; Suure_Id 1 = water level, 2 = discharge), Vedenkorkeus and Virtaama (Paikka_Id, Aika, Arvo). Server pages are 500 rows
-// and carry an odata.nextLink. One bulk query per entity for the last few days, so a build is about 12 requests, not one per station.
+// and carry an odata.nextLink. One bulk query per entity for the last few days, so a build is about 13 requests, not one per station.
 import { fetchJson, mergeHistory, GENERIC_LEVELS } from './lib.mjs';
 
 const API = 'https://rajapinnat.ymparisto.fi/api/Hydrologiarajapinta/1.1/odata';
@@ -26,7 +26,11 @@ export function helsinkiMidnight(iso) {
 
 // Pure. places: Paikka rows, levels/flows: Vedenkorkeus/Virtaama rows. Only places with a value in the window become stations; a level place and
 // a discharge place with the same station number (Nro) are one station. Level Arvo is cm (the reference differs per place), discharge is m3/s.
-export function parseStations(places, levels, flows) {
+// elevationRows: VedenkTasoTieto rows with Tasokorjaus 0 = the place's level is given directly in that height system (N60, N43, N2000, NN, LN), i.e. it is an
+// elevation (lakes: 11013 cm = 110.13 m), not a height above a gauge zero. Such stations get a suffix in the name; the number is not comparable with the others.
+export const ELEV_SUFFIX = ' (hladina v m n. m.)';
+export function parseStations(places, levels, flows, elevationRows = []) {
+  const elev = new Set(elevationRows.filter(r => r.Tasokorjaus === 0).map(r => r.Paikka_Id));
   const series = rows => { const m = new Map(); for (const r of rows) { const v = r.Arvo == null || r.Arvo === '' ? NaN : Number(r.Arvo), t = helsinkiMidnight(r.Aika); if (Number.isFinite(v) && t != null) (m.get(r.Paikka_Id) ?? m.set(r.Paikka_Id, []).get(r.Paikka_Id)).push([t, v]); } for (const a of m.values()) a.sort((x, y) => x[0] - y[0]); return m; };
   const L = series(levels), Q = series(flows);
   const groups = new Map();
@@ -43,7 +47,7 @@ export function parseStations(places, levels, flows) {
   for (const [nro, g] of groups) {
     if (g.Hdup || g.Qdup) continue; // two places of one kind under one number: ambiguous, skip
     const main = (g.Q ?? g.H).p;
-    const full = String(main.Nimi ?? '').trim();
+    const full = String(main.Nimi ?? '').trim() + (g.H && elev.has(g.H.p.Paikka_Id) ? ELEV_SUFFIX : '');
     out.push({
       id: nro, name: full, river: (main.PaaVesalNimi ?? '').trim(),
       lat: dms(main.KoordLat), lon: dms(main.KoordLong), pov: (main.PaaVesalNimi ?? '').trim() || 'Ostatní',
@@ -65,8 +69,9 @@ async function build(prev) {
   const win = `$filter=${encodeURIComponent(`Aika ge datetime'${d}T00:00:00'`)}&$select=Paikka_Id,Aika,Arvo`;
   const levels = await pages(`${API}/Vedenkorkeus?${win}`);
   const flows = await pages(`${API}/Virtaama?${win}`);
+  const elevation = await pages(`${API}/VedenkTasoTieto?$filter=${encodeURIComponent('Tasokorjaus eq 0')}`);
   const places = await pages(`${API}/Paikka?$filter=${encodeURIComponent('Suure_Id eq 1 or Suure_Id eq 2')}&$select=${['Paikka_Id', 'Suure_Id', 'Nro', 'Nimi', 'KoordLat', 'KoordLong', 'PaaVesalNimi'].join(',')}`);
-  const stations = mergeHistory(prev?.stations, parseStations(places, levels, flows), 7 * 24);
+  const stations = mergeHistory(prev?.stations, parseStations(places, levels, flows, elevation), 7 * 24);
   return { updated: new Date().toISOString(), stations };
 }
 
@@ -76,8 +81,7 @@ export default {
   levels: GENERIC_LEVELS,
   source: 'Syke',
   about: `<p>Zdroj: Suomen ympäristökeskus (Syke), <a href="https://www.syke.fi/en/open-data">Hydrologiarajapinta</a> (otevřená data, CC BY 4.0).
-   <b>Lähde: Suomen ympäristökeskus (Syke).</b> Data jsou denní průměry (ne měření v reálném čase). Výška hladiny je v cm, vztažná úroveň se liší
-   podle stanice (nula latě nebo výška nad mořem), proto ji nelze mezi stanicemi srovnávat. Stupně povodňové aktivity nejsou k dispozici, stanice jsou šedé.
+   <b>Lähde: Suomen ympäristökeskus (Syke).</b> Data jsou denní průměry (ne měření v reálném čase). Výška hladiny je v cm; obvykle od nuly latě stanice, u stanic označených „hladina v m n. m.“ jde o nadmořskou výšku (typicky jezera, např. 11013 cm = 110,13 m; výškový systém N2000, N60, N43 aj. podle stanice). Obojí nelze mezi stanicemi srovnávat. Syke ve veřejném rozhraní nezveřejňuje povodňové limity ani dlouhodobé průměry, proto stupně povodňové aktivity nejsou k dispozici, stanice jsou šedé.
    Informativní údaje bez záruky; Syke za jejich správnost ani dostupnost neodpovídá.</p>`,
   sources: { stations: { ttlMin: 180, build } },
 };

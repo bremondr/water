@@ -1,11 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import fi, { parseStations, dms, helsinkiMidnight } from '../countries/fi.mjs';
+import fi, { ELEV_SUFFIX, parseStations, dms, helsinkiMidnight } from '../countries/fi.mjs';
 import { normalizeStations } from '../countries/lib.mjs';
 
 const fx = JSON.parse(readFileSync(new URL('./fixtures/fi-syke.json', import.meta.url), 'utf8'));
-const stations = parseStations(fx.paikka.value, fx.vedenkorkeus.value, fx.virtaama.value);
+const stations = parseStations(fx.paikka.value, fx.vedenkorkeus.value, fx.virtaama.value, fx.vedenktasotieto.value);
 
 test('coordinates DDMMSS', () => {
   assert.ok(Math.abs(dms('622536') - 62.42667) < 1e-4);
@@ -36,4 +36,9 @@ test('output is valid for the frontend', () => {
 });
 test('module shape', () => {
   assert.equal(fi.id, 'fi'); assert.ok(fi.sources.stations.build); assert.match(fi.about, /Syke/);
+});
+test('elevation-native level places (Tasokorjaus 0) are marked, gauge-relative ones are not', () => {
+  const a = stations.find(s => s.id === '0101200'), b = stations.find(s => s.id === '0201000');
+  assert.ok(a && a.name.endsWith(ELEV_SUFFIX));
+  assert.ok(b && !b.name.endsWith(ELEV_SUFFIX));
 });

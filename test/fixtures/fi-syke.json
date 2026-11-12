@@ -557,5 +557,27 @@
     "Lippu_id": null
    }
   ]
+ },
+ "vedenktasotieto": {
+  "value": [
+   {
+    "Paikka_Id": 1721,
+    "Korkeustaso_Id": 1,
+    "TasoKoordinaatisto": "N60",
+    "Tasokorjaus": 0
+   },
+   {
+    "Paikka_Id": 1733,
+    "Korkeustaso_Id": 3,
+    "TasoKoordinaatisto": "NN",
+    "Tasokorjaus": 0
+   },
+   {
+    "Paikka_Id": 3541,
+    "Korkeustaso_Id": 1,
+    "TasoKoordinaatisto": "N60",
+    "Tasokorjaus": 0
+   }
+  ]
  }
 }

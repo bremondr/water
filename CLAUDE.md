@@ -6,7 +6,7 @@ Prototype web app. Node 20+ (ESM, no dependencies, no build step). UI language i
 
 ## Commands
 - `npm start`: local server on http://localhost:8080 (`PORT` env var changes it). Serves the same `data/*.json` files the static site has.
-- `npm run build`: static build into `site/` (gitignored): `index.html`, `climate.mjs`, `data/{stations,reservoirs,climate}.json`. Sources younger than
+- `npm run build`: static build into `site/` (gitignored): `index.html`, `climate.mjs`, `data/countries.json`, `data/<country>/{stations,reservoirs,climate}.json`. Sources younger than
   their TTL are not fetched again (`STATIONS_TTL_MIN` 25, `RESERVOIRS_TTL_MIN` 55, `CLIMATE_TTL_MIN` 10080). Exits 1 if a source has no data at all.
 - `npm test`: offline parser/cache/basin tests (`node --test "test/*.test.mjs"`).
 - `npm run fixtures`: re-saves the live portal pages into `test/fixtures/` (needs network). Run it when a portal
@@ -14,9 +14,15 @@ Prototype web app. Node 20+ (ESM, no dependencies, no build step). UI language i
 - `npm run geocode`: looks up missing dam positions in OpenStreetMap, keeps existing entries.
 
 ## Layout
+- `countries/`: one module per country (`countries/<id>.mjs`, found automatically, no registry). `lib.mjs` documents the module and station
+  format and has `mergeHistory` (builds a 48 h history across runs for APIs that only give the latest reading), `normalizeStations`,
+  `fetchJson`. `cz.mjs` wraps the Czech builders below. Output goes to `data/<id>/{stations,reservoirs,climate}.json` plus `data/countries.json`.
+  To add a country: write the module, put a trimmed API response in `test/fixtures/` and test the pure parsing function, run
+  `node scripts/build-static.mjs <id>` and `PORT=8099 npm start`, add the attribution wording to `about` and a section to
+  `docs/licensing-and-terms.md`. A country whose stations fail is left out of the site; the others still publish.
 - `builders.mjs`: ČHMÚ station builder and reservoir/weir builder, shared by the server and the static build. Past days (D-1, D-2) persist in
   `.cache/past.json`, so a build only asks ČHMÚ for today's files (~550 requests).
-- `server.mjs`: local dev server, `data/stations.json`, `data/reservoirs.json`, `data/climate.json`, `climate.mjs`, `index.html`.
+- `server.mjs`: local dev server with the same `data/…` URLs as the static site, `climate.mjs`, `index.html`.
 - `scripts/build-static.mjs` + `.github/workflows/pages.yml`: every 30 min (and on push to `pages`) restore `.cache/` from the Actions cache, run tests,
   build, deploy with `deploy-pages`. Scheduled runs are the only thing that touches the sources; GitHub delays them by 5-20 min, so the data is
   25-60 min old. Nothing is committed. Public repos get scheduled workflows disabled after 60 days without commits.
@@ -33,7 +39,7 @@ Prototype web app. Node 20+ (ESM, no dependencies, no build step). UI language i
 - `basins.mjs`: station → povodí mapping from the hydrological order number (approximate).
 - `cache.mjs`: stale-while-revalidate cache persisted to `.cache/` (gitignored). A restart serves the last good data
   instantly. A failed refresh keeps the previous value.
-- `index.html`: the whole frontend (Leaflet from cdnjs). Station mode and reservoir mode share one map and sidebar. Fetches `data/*.json` relative to the page.
+- `index.html`: the whole frontend (Leaflet from cdnjs). Station mode and reservoir mode share one map and sidebar. Reads `data/countries.json`, then `data/<country>/*.json`, relative to the page; `?c=<id>` picks the country.
 - `dam-coords.json`: `"pla:107": [lat, lon]`, a third value `1` means **approximate position** (shown with a dashed
   ring and a notice in the UI). Hand-editable. Dams without an entry are not shown.
 - `docs/licensing-and-terms.md`: **unresolved** licensing/terms questions. Read before publishing anything.

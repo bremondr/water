@@ -102,19 +102,19 @@ body.dams #river,body.dams #chips{display:none}
    <button class="chip" data-mode="dam" aria-pressed="false">Nádrže a jezy</button>
   </div>
   <div class="controls">
+   <select id="country" aria-label="Země" style="display:none"></select>
    <input id="q" type="search" placeholder="Hledat stanici nebo tok…" autocomplete="off">
-   <select id="pov"><option value="">Všechna povodí</option></select>
+   <select id="pov" aria-label="Oblast"><option value="">Všechna povodí</option></select>
    <select id="river"><option value="">Všechny toky</option></select>
    <div class="chips" id="chips"></div>
    <button class="chip" id="bar" aria-pressed="false">Zobrazit seznam</button>
   </div>
   <div id="list"></div>
   <footer class="sub about"><details><summary>O datech a zdrojích</summary>
-   <p>Informativní údaje bez záruky. Nejde o výstražnou ani předpovědní službu; při povodních sledujte oficiální informace povodí a ČHMÚ.
+   <p>Informativní údaje bez záruky. Nejde o výstražnou ani předpovědní službu; při povodních sledujte oficiální informace hydrologických služeb.
    Data se stahují automaticky přibližně každých 30 minut a mohou být zpožděná.</p>
-   <p>Zdroje: ČHMÚ (<a href="https://opendata.chmi.cz/hydrology/">otevřená data</a>), webové portály Povodí Labe, Vltavy, Ohře, Odry a Moravy,
-   OpenStreetMap, Wikipedie a Wikidata (polohy a seznam jezů), mapový podklad © přispěvatelé OpenStreetMap. Neoficiální projekt,
-   <a href="https://github.com/bremondr/water">zdrojový kód</a>.</p></details></footer>
+   <div id="aboutCountry"></div>
+   <p>Mapový podklad © přispěvatelé OpenStreetMap. Neoficiální projekt, <a href="https://github.com/bremondr/water">zdrojový kód</a>.</p></details></footer>
  </aside>
  <main id="main"><div id="map"></div>
   <div class="legend" id="legend"></div>
@@ -124,8 +124,9 @@ body.dams #river,body.dams #chips{display:none}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
 const COL=['--d0','--d1','--d2','--d3','--d4'];
-const DEG=['Bez povodňové aktivity','1. SPA – bdělost','2. SPA – pohotovost','3. SPA – ohrožení','Extrémní povodeň'];
-const SHORT=['Normální','1. SPA','2. SPA','3. SPA','Extrém'];
+let DEG=[],SHORT=[];   // flood-degree names of the current country (data/countries.json)
+let CC=null,countries=[];
+const dpath=f=>`data/${CC.id}/${f}.json`;
 const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -154,7 +155,8 @@ function trend(a){ // change over the last ~hour
 }
 
 const map=L.map('map').setView([49.8,15.5],7);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18,attribution:'© OpenStreetMap · data ČHMÚ'}).addTo(map);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18,attribution:'© OpenStreetMap'}).addTo(map);
+let creditText='';
 
 function visible(){
   const q=$('q').value.trim().toLowerCase(),r=$('river').value,p=$('pov').value;
@@ -237,7 +239,7 @@ function longTerm(s){
     const diff=s.st.h-s.ha;
     return`<div class="thr"><b>Dlouhodobý průměr</b>
      <div style="display:block">Průměrný vodní stav: <b>${fmt(s.ha)} cm</b> · nyní ${fmt(s.st.h)} cm (${diff>=0?'+':'−'}${fmt(Math.abs(diff))} cm)</div></div>
-     <div class="sub" style="padding:0 16px 12px">Zdroj: ČHMÚ, metadata stanice. Referenční období ČHMÚ u vodních stavů neuvádí.</div>`;
+     ${CC.haNote?`<div class="sub" style="padding:0 16px 12px">${CC.haNote}</div>`:""}`;
   }
   const qa=c?.qa??s.qa,q=s.st.q;
   if(qa==null)return'';
@@ -282,7 +284,7 @@ function open(s,pan=true){
    <div class="thr">${th.map((t,i)=>t!=null?`<div><span class="dot" style="background:${css(COL[i+1])}"></span>${DEG[i+1]}: <b>${fmt(t,d)} ${u}</b></div>`:'').join('')}</div>
    ${longTerm(s)}`;
   el.classList.add('open');
-  el.querySelector('.x').onclick=()=>{sel=null;history.replaceState(null,'',location.pathname);el.classList.remove('open');render()};
+  el.querySelector('.x').onclick=()=>{sel=null;history.replaceState(null,'',location.pathname+location.search);el.classList.remove('open');render()};
   el.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{metric=b.dataset.m;open(s,false)});
   if(pan)map.flyTo([s.lat,s.lon],Math.max(map.getZoom(),10),{duration:.6});
   render();
@@ -411,7 +413,7 @@ function openDam(d,pan=true){
 }
 async function loadDams(){
   try{
-    const r=await fetch('data/reservoirs.json');if(!r.ok)throw new Error(r.status);
+    const r=await fetch(dpath('reservoirs'));if(!r.ok)throw new Error(r.status);
     const body=await r.json();D=[...body.reservoirs,...(body.weirs||[])];damErrors=body.errors||[];
     if(selD)selD=D.find(x=>x.key===selD.key)||null;
     if(mode==='dam'){renderDams();if(selD)openDam(selD,false);legend()}
@@ -421,7 +423,7 @@ function setMode(m){
   mode=m;document.body.classList.toggle('dams',m==='dam');
   document.querySelectorAll('#modes .chip').forEach(b=>b.setAttribute('aria-pressed',b.dataset.mode===m));
   $('q').placeholder=m==='dam'?'Hledat nádrž, jez nebo tok…':'Hledat stanici nebo tok…';
-  $('detail').classList.remove('open');sel=null;selD=null;history.replaceState(null,'',location.pathname);
+  $('detail').classList.remove('open');sel=null;selD=null;history.replaceState(null,'',location.pathname+location.search);
   legend();render();
   const pts=(m==='dam'?D:S).map(x=>[x.lat,x.lon]);
   if(m==='dam'&&pts.length)map.fitBounds(L.latLngBounds(pts),{padding:[50,50],maxZoom:10});
@@ -442,13 +444,13 @@ $('bar').onclick=()=>{const on=document.body.classList.toggle('showlist');$('bar
 
 async function load(){
   try{
-    const r=await fetch('data/stations.json');if(!r.ok)throw new Error(r.status);
+    const r=await fetch(dpath('stations'));if(!r.ok)throw new Error(r.status);
     const d=await r.json();S=d.stations;S.forEach(s=>s.st=status(s));
     const age=(Date.now()-new Date(d.updated))/36e5;
-    $('updated').innerHTML='Aktualizováno '+new Date(d.updated).toLocaleString('cs-CZ')+' · '+S.length+' stanic · zdroj ČHMÚ'+(age>3?' <span class="stale">· data jsou starší než '+Math.floor(age)+' h</span>':'');
+    $('updated').innerHTML='Aktualizováno '+new Date(d.updated).toLocaleString('cs-CZ')+' · '+S.length+' stanic · zdroj '+CC.source+(age>3?' <span class="stale">· data jsou starší než '+Math.floor(age)+' h</span>':'');
     const povs=[...new Set(S.map(s=>s.pov))].sort((a,b)=>a.localeCompare(b,'cs'));
     const cp=$('pov').value;
-    $('pov').innerHTML='<option value="">Všechna povodí</option>'+povs.map(x=>`<option value="${esc(x)}">${esc(x)} (${S.filter(s=>s.pov===x).length})</option>`).join('');
+    $('pov').innerHTML=`<option value="">${esc(CC.allRegions)}</option>`+povs.map(x=>`<option value="${esc(x)}">${esc(x)} (${S.filter(s=>s.pov===x).length})</option>`).join('');
     $('pov').value=cp;riverOptions();
     legend();
     if(sel)sel=S.find(s=>s.id===sel.id)||null;
@@ -459,9 +461,35 @@ async function load(){
   }catch(e){$('updated').textContent='Data se nepodařilo načíst: '+e.message}
 }
 import('./climate.mjs').then(m=>{exceedanceDays=m.exceedanceDays;if(mode==='st'&&sel)open(sel,false)}).catch(()=>{});
-fetch('data/climate.json').then(r=>r.ok?r.json():null).then(b=>{if(b){climate=b.stations||{};if(mode==='st'&&sel)open(sel,false)}}).catch(()=>{});
-load().then(()=>{const p=new URLSearchParams(location.search).get('pov');if(p){$('pov').value=p;$('pov').onchange()}});setInterval(load,10*60*1000);
-loadDams().then(()=>{const u=new URLSearchParams(location.search);if(u.get('mode')==='dam'){setMode('dam');const d=D.find(x=>x.key===u.get('id'));if(d)openDam(d)}});setInterval(loadDams,10*60*1000);
+async function setCountry(id){
+  CC=countries.find(c=>c.id===id)||countries[0];
+  DEG=CC.levels.names;SHORT=CC.levels.short;
+  S=[];D=[];climate={};sel=null;selD=null;filterDeg=null;damErrors=[];mode='st';
+  markers.forEach(m=>map.removeLayer(m));markers.clear();
+  document.body.classList.remove('dams');$('detail').classList.remove('open');
+  document.querySelectorAll('#modes .chip').forEach(b=>b.setAttribute('aria-pressed',b.dataset.mode==='st'));
+  $('q').value='';$('q').placeholder='Hledat stanici nebo tok…';$('river').value='';
+  $('pov').innerHTML=`<option value="">${esc(CC.allRegions)}</option>`;$('pov').setAttribute('aria-label',CC.regionLabel);
+  $('country').value=CC.id;$('modes').style.display=CC.has.reservoirs?'':'none';$('aboutCountry').innerHTML=CC.about;
+  if(creditText)map.attributionControl.removeAttribution(creditText);
+  creditText='data '+CC.source;map.attributionControl.addAttribution(creditText);
+  map.setView(CC.center,CC.zoom);
+  const u=new URL(location.href);if(CC.id==='cz')u.searchParams.delete('c');else u.searchParams.set('c',CC.id);history.replaceState(null,'',u.pathname+u.search+location.hash);
+  const stations=load();
+  if(CC.has.climate)fetch(dpath('climate')).then(r=>r.ok?r.json():null).then(b=>{if(b&&CC.has.climate){climate=b.stations||{};if(mode==='st'&&sel)open(sel,false)}}).catch(()=>{});
+  await stations;
+  if(CC.has.reservoirs)await loadDams();
+}
+$('country').onchange=()=>{location.hash='';setCountry($('country').value)};
+(async()=>{
+  try{countries=await (await fetch('data/countries.json')).json()}catch(e){$('updated').textContent='Data se nepodařilo načíst: '+e.message;return}
+  $('country').innerHTML=countries.map(c=>`<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('');$('country').style.display=countries.length<2?'none':'';
+  const u=new URLSearchParams(location.search);
+  await setCountry(u.get('c')||'cz');
+  const p=u.get('pov');if(p){$('pov').value=p;$('pov').onchange()}
+  if(CC.id==='cz'&&u.get('mode')==='dam'){setMode('dam');const d=D.find(x=>x.key===u.get('id'));if(d)openDam(d)}
+  setInterval(load,10*60*1000);setInterval(()=>{if(CC.has.reservoirs)loadDams()},10*60*1000);
+})();
 </script>
 </body>
 </html>

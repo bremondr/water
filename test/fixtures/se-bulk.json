@@ -1,0 +1,355 @@
+{
+ "updated": 1794438000000,
+ "parameter": {
+  "key": "2",
+  "name": "Vattenföring (15 min)",
+  "unit": "m³/s"
+ },
+ "period": {
+  "key": "latest-hour",
+  "from": 1794434401000,
+  "to": 1794438000000,
+  "summary": "Data från senaste timmen"
+ },
+ "link": [
+  {
+   "href": "https://opendata-download-hydroobs.smhi.se/api/version/1.0/parameter/2/station-set/all/period/latest-hour/data.json",
+   "rel": "data",
+   "type": "application/json"
+  },
+  {
+   "href": "https://opendata-download-hydroobs.smhi.se/api/version/1.0/parameter/2/station-set/all/period/latest-hour/data.xml",
+   "rel": "data",
+   "type": "application/xml"
+  },
+  {
+   "href": "https://opendata-download-hydroobs.smhi.se/api/version/1.0/parameter/2/station-set/all/period/latest-hour/data.csv",
+   "rel": "data",
+   "type": "text/plain"
+  },
+  {
+   "href": "https://opendata-download-hydroobs.smhi.se/api/version/1.0/parameter/2/station-set/all/period/latest-hour.atom",
+   "rel": "period",
+   "type": "application/atom+xml"
+  },
+  {
+   "href": "https://opendata-catalog.smhi.se/md/ae7f2051-7693-4cc6-8528-de1b6a592cef",
+   "rel": "iso19139",
+   "type": "application/vnd.iso.19139+xml"
+  },
+  {
+   "href": "https://opendata-catalog.smhi.se/md/545f7280-7d15-11ed-a51b-432755aaeed3",
+   "rel": "iso19139",
+   "type": "application/vnd.iso.19139+xml"
+  }
+ ],
+ "station": [
+  {
+   "id": 1583,
+   "key": "1583",
+   "name": "VÄSTERSEL",
+   "owner": "SMHI",
+   "measuringStations": "CORE",
+   "region": 36,
+   "catchmentName": "MOÄLVEN",
+   "catchmentNumber": 36000,
+   "catchmentSize": 1465.2,
+   "from": 420898500000,
+   "to": 1794438900000,
+   "latitude": 63.4332,
+   "longitude": 18.3034,
+   "value": [
+    {
+     "date": 1794435300000,
+     "value": 23.8,
+     "quality": "O"
+    },
+    {
+     "date": 1794436200000,
+     "value": 23.8,
+     "quality": "O"
+    },
+    {
+     "date": 1794437100000,
+     "value": 23.8,
+     "quality": "O"
+    },
+    {
+     "date": 1794438000000,
+     "value": 23.8,
+     "quality": "O"
+    }
+   ]
+  },
+  {
+   "id": 2305,
+   "key": "2305",
+   "name": "HULUBÄCKEN",
+   "owner": "SMHI",
+   "measuringStations": "CORE",
+   "region": 101,
+   "catchmentName": "NISSAN",
+   "catchmentNumber": 101000,
+   "catchmentSize": 3.8,
+   "from": 354705300000,
+   "to": 1794438000000,
+   "latitude": 57.7319,
+   "longitude": 13.7301,
+   "value": [
+    {
+     "date": 1794435300000,
+     "value": 0.033,
+     "quality": "O"
+    },
+    {
+     "date": 1794436200000,
+     "value": 0.033,
+     "quality": "O"
+    },
+    {
+     "date": 1794437100000,
+     "value": 0.033,
+     "quality": "O"
+    }
+   ]
+  },
+  {
+   "id": 1456,
+   "key": "1456",
+   "name": "KAALASJÄRVI",
+   "owner": "SMHI",
+   "measuringStations": "CORE",
+   "region": 4,
+   "catchmentName": "KALIXÄLVEN",
+   "catchmentNumber": 4000,
+   "catchmentSize": 1472.5,
+   "from": 169222500000,
+   "to": 1794438900000,
+   "latitude": 67.7445,
+   "longitude": 20.0199,
+   "value": [
+    {
+     "date": 1794435300000,
+     "value": 20.5,
+     "quality": "O"
+    },
+    {
+     "date": 1794436200000,
+     "value": 20.5,
+     "quality": "O"
+    },
+    {
+     "date": 1794437100000,
+     "value": 20.5,
+     "quality": "O"
+    },
+    {
+     "date": 1794438000000,
+     "value": 20.5,
+     "quality": "O"
+    }
+   ]
+  },
+  {
+   "id": 1697,
+   "key": "1697",
+   "name": "KÖPINGE",
+   "owner": "SMHI",
+   "measuringStations": "CORE",
+   "region": 88,
+   "catchmentName": "HELGE Å",
+   "catchmentNumber": 88000,
+   "catchmentSize": 1.8,
+   "from": 94716900000,
+   "to": 1794438900000,
+   "latitude": 55.9454,
+   "longitude": 14.136,
+   "value": [
+    {
+     "date": 1794435300000,
+     "value": 0,
+     "quality": "O"
+    },
+    {
+     "date": 1794436200000,
+     "value": 0,
+     "quality": "O"
+    },
+    {
+     "date": 1794437100000,
+     "value": 0,
+     "quality": "O"
+    },
+    {
+     "date": 1794438000000,
+     "value": 0,
+     "quality": "O"
+    }
+   ]
+  },
+  {
+   "id": 2422,
+   "key": "2422",
+   "name": "HÄLLERED",
+   "owner": "SMHI",
+   "measuringStations": "CORE",
+   "region": 106,
+   "catchmentName": "ROLFSÅN",
+   "catchmentNumber": 106000,
+   "catchmentSize": 42.2,
+   "from": 537477300000,
+   "to": 1794438900000,
+   "latitude": 57.7882,
+   "longitude": 12.7395,
+   "value": [
+    {
+     "date": 1794435300000,
+     "value": 0.54,
+     "quality": "O"
+    },
+    {
+     "date": 1794436200000,
+     "value": 0.54,
+     "quality": "O"
+    },
+    {
+     "date": 1794437100000,
+     "value": 0.54,
+     "quality": "O"
+    },
+    {
+     "date": 1794438000000,
+     "value": 0.54,
+     "quality": "O"
+    }
+   ]
+  },
+  {
+   "id": 1575,
+   "key": "1575",
+   "name": "SIMLÅNGEN",
+   "owner": "SMHI",
+   "measuringStations": "CORE",
+   "region": 1,
+   "catchmentName": "FYLLEÅN",
+   "catchmentNumber": 100000,
+   "catchmentSize": 259.7,
+   "from": 63065700000,
+   "to": 1794438900000,
+   "latitude": 56.7157,
+   "longitude": 13.1244,
+   "value": [
+    {
+     "date": 1794435300000,
+     "value": 3.61,
+     "quality": "O"
+    },
+    {
+     "date": 1794436200000,
+     "value": 3.61,
+     "quality": "O"
+    },
+    {
+     "date": 1794437100000,
+     "value": 3.61,
+     "quality": "O"
+    },
+    {
+     "date": 1794438000000,
+     "value": 3.61,
+     "quality": "O"
+    }
+   ]
+  },
+  {
+   "id": 2309,
+   "key": "2309",
+   "name": "GREA",
+   "owner": "SMHI",
+   "measuringStations": "CORE",
+   "region": 108,
+   "catchmentName": "GÖTA ÄLV",
+   "catchmentNumber": 108000,
+   "catchmentSize": 309.1,
+   "from": 399572100000,
+   "to": 1794438900000,
+   "latitude": 60.3379,
+   "longitude": 12.9895,
+   "value": [
+    {
+     "date": 1794435300000,
+     "value": 4.36,
+     "quality": "O"
+    },
+    {
+     "date": 1794436200000,
+     "value": 4.36,
+     "quality": "O"
+    },
+    {
+     "date": 1794437100000,
+     "value": 4.36,
+     "quality": "O"
+    },
+    {
+     "date": 1794438000000,
+     "value": 4.36,
+     "quality": "O"
+    }
+   ]
+  },
+  {
+   "id": 2308,
+   "key": "2308",
+   "name": "VAGGE",
+   "owner": "SMHI",
+   "measuringStations": "CORE",
+   "region": 108,
+   "catchmentName": "GÖTA ÄLV",
+   "catchmentNumber": 108000,
+   "catchmentSize": 988.7,
+   "from": 386431200000,
+   "to": 1794438900000,
+   "latitude": 59.7177,
+   "longitude": 12.508,
+   "value": [
+    {
+     "date": 1794435300000,
+     "value": 19.7,
+     "quality": "O"
+    },
+    {
+     "date": 1794436200000,
+     "value": 19.6,
+     "quality": "O"
+    },
+    {
+     "date": 1794437100000,
+     "value": 19.5,
+     "quality": "O"
+    },
+    {
+     "date": 1794438000000,
+     "value": 19.5,
+     "quality": "O"
+    }
+   ]
+  },
+  {
+   "id": 2227,
+   "key": "2227",
+   "name": "BUSKBÄCKEN",
+   "owner": "SMHI",
+   "measuringStations": "CORE",
+   "region": 61,
+   "catchmentName": "NORRSTRÖM",
+   "catchmentNumber": 61000,
+   "catchmentSize": 1.8,
+   "from": 257865300000,
+   "to": 1794438900000,
+   "latitude": 59.9038,
+   "longitude": 15.2314,
+   "value": []
+  }
+ ]
+}

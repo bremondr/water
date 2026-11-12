@@ -97,3 +97,15 @@ Last reviewed: 2026-10-14.
 - [ ] Replace the public OSM tile server with a provider that allows the expected traffic.
 - [ ] Review the ODbL (OSM) and CC BY-SA (Wikipedia) implications of publishing `dam-coords.json`, and credit them.
 - [ ] Decide whether the repo may become public (it contains scraper code and positions derived from OSM).
+
+## Sweden (SMHI, `countries/se.mjs`)
+- Source: SMHI open data, hydrological observations, `https://opendata-download-hydroobs.smhi.se/api/version/latest/parameter/2/station-set/all/period/latest-hour/data.json`
+  (discharge, 15 min values, all active stations, one request per build). No key, no login.
+- Licence (https://www.smhi.se/data/om-smhis-data/villkor-for-anvandning): "Med våra öppna data följer licensvillkoren Creative commons Erkännande 4.0 SE."
+  Attribution: "Du ska ange SMHI som källa och även ange om du har ändrat i licensmaterialet." (same on https://www.smhi.se/data/om-smhis-data/fragor-och-svar,
+  which adds that real-time data can be unreviewed: "Realtidsdata kan vara helt ogranskad.") The UI credits SMHI, links the licence and says what was changed (names title-cased, history assembled from repeated fetches).
+- Update interval: values every 15 min; build TTL 60 min; the bulk file holds only the last hour, so history builds up across scheduled runs.
+- Not verified: the same terms page says warning information "får inte ändras"; this app does not republish SMHI warnings. The API documentation
+  page (opendata.smhi.se/apidocs) was not reachable from the build machine, endpoints were verified live. No explicit liability disclaimer found; the app adds its own.
+- Not used: water level (parameter 3: only 10 lake stations, no bulk call, station-specific datums), flood thresholds (none in this API).
+- Researched 2026-11-11, no bulk source found: `station-set/all` offers only period `latest-hour` (`latest-day` on it returns 404; latest-day exists per station only, ~298 requests, too many). `parameter/2.json` lists 721 stations (298 active) in one request but without values. Return flows HQ2/HQ10/HQ50 and MQ exist only as S-HYPE model statistics per sub-basin in Vattenwebb (no open bulk API, not per gauge, so not usable as gauge thresholds). The warnings API (opendata-download-warnings.smhi.se) is per area, not per gauge, and its terms forbid changes.

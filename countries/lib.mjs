@@ -8,9 +8,10 @@
 //     regionLabel: 'Povodí', allRegions: 'Všechna povodí',   label of the filter built from station.pov
 //     levels: { names: [5 strings], short: [5 strings] },   flood-degree names: none, 1, 2, 3, extreme (index = degree)
 //     source: 'ČHMÚ',                    short credit shown in the map attribution
+//     haNote: 'Zdroj: …',               optional note under the long-term mean level (station.ha) in the station panel: source and reference period
 //     about: '<p>…</p>',                 HTML for the "O datech a zdrojích" note: licence, required attribution wording, disclaimer
 //     sources: {                         what the build fetches; each has its own cache and minimum age
-//       stations:   { ttlMin: 25, build },    required. build(prev) -> { updated, stations: [station] }
+//       stations:   { ttlMin: 25, build },    required. build(prev) -> { updated, stations: [station] }; updated = ISO string (epoch numbers are converted, future times capped to now)
 //       reservoirs: { ttlMin: 55, build },    optional. -> { updated, reservoirs, weirs, errors }
 //       climate:    { ttlMin: 10080, build }, optional. -> { stations: { id: … } }
 //     },
@@ -67,6 +68,14 @@ export function normalizeStations(list) {
     });
   }
   return out;
+}
+
+// Pure. `updated` of a stations result as an ISO string: accepts ISO strings, Date, epoch seconds or milliseconds; a time in the future (clock skew
+// or a source that mislabels local time) is capped to `now`; anything unreadable becomes `now`.
+export function normalizeUpdated(u, now = Date.now()) {
+  let t = u instanceof Date ? u.getTime() : typeof u === 'number' ? (u < 1e11 ? u * 1000 : u) : Date.parse(u);
+  if (!Number.isFinite(t)) t = now;
+  return new Date(Math.min(t, now)).toISOString();
 }
 
 // the generic names used when a country has no official flood-degree scheme

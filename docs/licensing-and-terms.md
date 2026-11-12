@@ -88,8 +88,11 @@ Last reviewed: 2026-10-14.
 - Interval: TTL 30 min (the source updates every 15 min). History: the API is queried for the current value only; the 48 h series builds up over runs
   (`mergeHistory`), so a fresh country shows one point per station.
 - Czech Elbe stations (agency POVODÍ LABE) are in the feed but have no coordinates and are dropped; Dutch, Austrian and Swiss agencies are dropped explicitly.
-- Not verified: the exact meaning of the flood marks M_I..M_III (they are WSV marks, apparently navigation related, not Länder flood-warning levels: shown as
-  "Marke I..III", not as an official flood scheme); the reference period of MW/NNW (differs per station); whether the WSV wants contact before heavy use;
+- Verified (2026-11-11): M_I..M_III are the Hochwassermarken I-III of the shipping rules (BinSchStrO, Rhein/Mosel/Oder regulations): levels at a Richtpegel where navigation is restricted
+  (I: e.g. small craft/ferries banned on the Oder) or banned (II = HSW, highest navigable level; III on the Mosel). They are not Länder flood-warning levels (Meldestufen).
+  Shown as "HM I..III". Only ~59/54/34 of ~600 gauges have them; HSW alone exists at 127 (equals M_II at some, not all, e.g. Celle 310 vs 340, so not substituted).
+  A bulk Meldestufen source was not found: the LHP (hochwasserzentralen.de) closed its open API in 2023; the 16 Länder portals each differ (no common open format).
+  Still not verified: the reference period of MW/NNW (differs per station); whether the WSV wants contact before heavy use;
   the licence of third-party data shown in the portal.
 
 ### Other

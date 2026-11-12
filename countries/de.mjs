@@ -56,15 +56,17 @@ export default {
   id: 'de', name: 'Německo', center: [51.1, 10.3], zoom: 6,
   regionLabel: 'Skupina toků', allRegions: 'Všechny skupiny',
   levels: {
-    names: ['Pod značkou I', 'Značka I', 'Značka II', 'Značka III', 'Extrém'],
-    short: ['Normální', 'Marke I', 'Marke II', 'Marke III', 'Extrém'],
+    names: ['Pod hladinou HM I', 'Hochwassermarke I', 'Hochwassermarke II (HSW)', 'Hochwassermarke III', 'Extrém'],
+    short: ['Normální', 'HM I', 'HM II', 'HM III', 'Extrém'],
   },
   source: 'WSV / PEGELONLINE',
   haNote: 'Zdroj: WSV PEGELONLINE, charakteristická hodnota MW (střední vodní stav). Referenční období se u jednotlivých stanic liší.',
   about: `<p>Zdroj: <a href="https://www.pegelonline.wsv.de/">PEGELONLINE</a>, Wasserstraßen- und Schifffahrtsverwaltung des Bundes (WSV),
    licence <a href="https://www.govdata.de/dl-de/zero-2-0">Datenlizenz Deutschland – Zero – Version 2.0</a> (uvedení zdroje není povinné, uvádíme ho přesto).
    Jen spolkové vodní cesty (Labe, Rýn, Vezera, Dunaj, kanály, pobřeží), ne menší toky spolkových zemí. U části stanic jsou data třetích stran.
-   Značky I až III jsou hodnoty WSV (původně pro lodní dopravu), nejsou to stupně povodňové aktivity a nemají stejný význam jako české SPA.
+   Hochwassermarken (HM) I až III jsou hladiny, při kterých se podle předpisů o plavbě (BinSchStrO, nařízení pro Rýn, Moselu, Odru) omezuje nebo zakazuje lodní doprava;
+   HM II odpovídá nejvyšší plavební hladině (HSW), po jejím dosažení se plavba v úseku zakazuje (kromě převozů). Nejsou to stupně povodňové aktivity a nemají stejný význam jako české SPA.
+   Hodnoty mají jen stanice, kde jsou značky stanoveny (asi desetina).
    Barva se určuje jen u stanic, které značky mají; ostatní jsou šedé. Průměr je dlouhodobý (referenční období se u stanic liší).
    Data jsou informativní, bez záruky; WSV za jejich správnost neručí.</p>`,
   sources: { stations: { ttlMin: 30, build } },

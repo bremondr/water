@@ -81,6 +81,21 @@ Last reviewed: 2026-10-14.
 - Mapy.com (Mapy.cz) was only used as a manual research aid for dam positions. Do not copy coordinates from it
   in bulk: its terms restrict that. Positions found there should be confirmed independently (OSM, official sources).
 
+### Slovenia: ARSO (`countries/si.mjs`)
+- Source: `https://www.arso.gov.si/xml/vode/hidro_podatki_zadnji.xml` (latest reading of ~193 automatic stations, ~98 KB, `Access-Control-Allow-Origin: *`,
+  `Cache-Control: max-age=1800`, file itself says `predlagan_zajem_perioda` 30 min). We fetch it once per build, ttl 30 min. No key, no login.
+- **Licence: not found.** Checked 2026-11-11: the XML has no licence element, the data page (`/vode/podatki/hidro_podatki_xml.html`), `/ostraneh.html`
+  and `/omejitev_odgovornosti.html` contain no licence or reuse statement (no CC BY / open-data text). What they do say (Slovene): data are
+  informative, pre-verified and may change after checks ("Izjava o začasnosti podatkov"); ARSO accepts no liability for use ("Omejitev odgovornosti");
+  the flood-related values are not tied to an official danger level, which is set only by ARSO's forecasters on the warnings pages. The earlier research
+  guess "probably CC BY 4.0" is **unverified**. We did not read the PDF description of the XML (`/vode/podatki/opis_hidro_xml.pdf`) or search the Slovene
+  open-data portal (OPSI); ask ARSO (`gp.arso@gov.si`) before publishing.
+- Attribution used: "Vir: ARSO" (source credit in the map attribution and in `about`), plus the informational disclaimer.
+- Fields: the three flood values are ARSO's "značilne visokovodne vrednosti" (start of spilling out of the channel, local floods, wider floods). Discharge ones for
+  176 stations, stage ones (cm) for 16 (lakes and a few gauges); mapped to flood degrees 1-3. Times are `datum_cet` (CET, UTC+1).
+- Not verified: whether the file keeps its format, how the stage thresholds relate to the gauge zero (`kota_0` is not used), and the meaning of
+  `pretok_znacilni` (not used).
+
 ## Politeness towards the sources
 - ČHMÚ: a full station refresh is ~550 requests every 10 minutes (the two previous days are cached in memory
   and fetched once per day). The server refreshes on its own timer while it runs, even with no visitors.

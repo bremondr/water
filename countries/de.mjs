@@ -60,6 +60,7 @@ export default {
     short: ['Normální', 'Marke I', 'Marke II', 'Marke III', 'Extrém'],
   },
   source: 'WSV / PEGELONLINE',
+  haNote: 'Zdroj: WSV PEGELONLINE, charakteristická hodnota MW (střední vodní stav). Referenční období se u jednotlivých stanic liší.',
   about: `<p>Zdroj: <a href="https://www.pegelonline.wsv.de/">PEGELONLINE</a>, Wasserstraßen- und Schifffahrtsverwaltung des Bundes (WSV),
    licence <a href="https://www.govdata.de/dl-de/zero-2-0">Datenlizenz Deutschland – Zero – Version 2.0</a> (uvedení zdroje není povinné, uvádíme ho přesto).
    Jen spolkové vodní cesty (Labe, Rýn, Vezera, Dunaj, kanály, pobřeží), ne menší toky spolkových zemí. U části stanic jsou data třetích stran.
